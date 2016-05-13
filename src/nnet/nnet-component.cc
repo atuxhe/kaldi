@@ -55,6 +55,7 @@ const struct Component::key_value Component::kMarkerMap[] = {
   { Component::kConvolutional2DComponent,"<Convolutional2DComponent>"},
   { Component::kLstmProjectedStreams,"<LstmProjectedStreams>"},
   { Component::kBLstmProjectedStreams,"<BLstmProjectedStreams>"},
+  { Component::kBLCLstmProjectedStreams,"<BLCLstmProjectedStreams>"},
   { Component::kSoftmax,"<Softmax>" },
   { Component::kBlockSoftmax,"<BlockSoftmax>" },
   { Component::kSigmoid,"<Sigmoid>" },
@@ -123,6 +124,9 @@ Component* Component::NewComponentOfType(ComponentType comp_type,
       break;
     case Component::kBLstmProjectedStreams :
       ans = new BLstmProjectedStreams(input_dim, output_dim);
+      break;
+    case Component::kBLCLstmProjectedStreams :
+      ans = new BLCLstmProjectedStreams(input_dim, output_dim);
       break;
     case Component::kSoftmax :
       ans = new Softmax(input_dim, output_dim);

@@ -10,22 +10,27 @@
 # conf/queue.conf in http://kaldi-asr.org/doc/queue.html for more information,
 # or search for the string 'default_config' in utils/queue.pl or utils/slurm.pl.
 
-export train_cmd="queue.pl --mem 4G"
-export decode_cmd="queue.pl --mem 4G"
-export mkgraph_cmd="queue.pl --mem 8G"
+#export train_cmd="queue.pl --mem 4G"
+#export decode_cmd="queue.pl --mem 4G"
+#export mkgraph_cmd="queue.pl --mem 8G"
 # the use of cuda_cmd is deprecated but it's still sometimes used in nnet1
 # example scripts.
-export cuda_cmd="queue.pl --gpu 1"
+#export cuda_cmd="queue.pl --gpu 1"
 
 # the rest of this file is present for historical reasons.
 # for cluster-specific configuration it's better to rely on conf/queue.conf.
-if [ "$(hostname -d)" == "fit.vutbr.cz" ]; then
+#if [ "$(hostname -d)" == "fit.vutbr.cz" ]; then
   #b) BUT cluster options
-  queue="all.q@@blade,all.q@@speech"
-  gpu_queue="long.q@@gpu"
-  storage="matylda5"
-  export train_cmd="queue.pl -q $queue -l ram_free=1.5G,mem_free=1.5G,${storage}=0.5"
-  export decode_cmd="queue.pl -q $queue -l ram_free=2.5G,mem_free=2.5G,${storage}=0.1"
-  export cuda_cmd="queue.pl -q $gpu_queue -l gpu=1"
-fi
+#  queue="all.q@@blade,all.q@@speech"
+#  gpu_queue="long.q@@gpu"
+#  storage="matylda5"
+#  export train_cmd="queue.pl -q $queue -l ram_free=1.5G,mem_free=1.5G,${storage}=0.5"
+#  export decode_cmd="queue.pl -q $queue -l ram_free=2.5G,mem_free=2.5G,${storage}=0.1"
+#  export cuda_cmd="queue.pl -q $gpu_queue -l gpu=1"
+#fi
+
+export train_cmd=run.pl
+export decode_cmd=run.pl
+export cuda_cmd=run.pl
+export mkgraph_cmd=run.pl
 

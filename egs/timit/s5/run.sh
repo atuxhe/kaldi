@@ -28,7 +28,7 @@ numLeavesSGMM=7000
 numGaussSGMM=9000
 
 feats_nj=10
-train_nj=30
+train_nj=10
 decode_nj=5
 
 echo ============================================================================
@@ -36,7 +36,8 @@ echo "                Data & Lexicon & Language Preparation                     
 echo ============================================================================
 
 #timit=/export/corpora5/LDC/LDC93S1/timit/TIMIT # @JHU
-timit=/mnt/matylda2/data/TIMIT/timit # @BUT
+#timit=/mnt/matylda2/data/TIMIT/timit # @BUT
+timit=/data/speedat/timit # @BUT
 
 local/timit_data_prep.sh $timit || exit 1
 
@@ -49,6 +50,8 @@ utils/prepare_lang.sh --sil-prob 0.0 --position-dependent-phones false --num-sil
 
 local/timit_format_data.sh
 
+false && \
+{
 echo ============================================================================
 echo "         MFCC Feature Extration & CMVN for Training and Test set          "
 echo ============================================================================
@@ -61,7 +64,10 @@ for x in train dev test; do
   steps/make_mfcc.sh --cmd "$train_cmd" --nj $feats_nj data/$x exp/make_mfcc/$x $mfccdir
   steps/compute_cmvn_stats.sh data/$x exp/make_mfcc/$x $mfccdir
 done
+}
 
+false && \
+{
 echo ============================================================================
 echo "                     MonoPhone Training & Decoding                        "
 echo ============================================================================
@@ -75,7 +81,10 @@ steps/decode.sh --nj "$decode_nj" --cmd "$decode_cmd" \
 
 steps/decode.sh --nj "$decode_nj" --cmd "$decode_cmd" \
  exp/mono/graph data/test exp/mono/decode_test
+}
 
+false && \
+{
 echo ============================================================================
 echo "           tri1 : Deltas + Delta-Deltas Training & Decoding               "
 echo ============================================================================
@@ -94,7 +103,10 @@ steps/decode.sh --nj "$decode_nj" --cmd "$decode_cmd" \
 
 steps/decode.sh --nj "$decode_nj" --cmd "$decode_cmd" \
  exp/tri1/graph data/test exp/tri1/decode_test
+}
 
+false && \
+{
 echo ============================================================================
 echo "                 tri2 : LDA + MLLT Training & Decoding                    "
 echo ============================================================================
@@ -113,7 +125,10 @@ steps/decode.sh --nj "$decode_nj" --cmd "$decode_cmd" \
 
 steps/decode.sh --nj "$decode_nj" --cmd "$decode_cmd" \
  exp/tri2/graph data/test exp/tri2/decode_test
+}
 
+false && \
+{
 echo ============================================================================
 echo "              tri3 : LDA + MLLT + SAT Training & Decoding                 "
 echo ============================================================================
@@ -133,7 +148,10 @@ steps/decode_fmllr.sh --nj "$decode_nj" --cmd "$decode_cmd" \
 
 steps/decode_fmllr.sh --nj "$decode_nj" --cmd "$decode_cmd" \
  exp/tri3/graph data/test exp/tri3/decode_test
+}
 
+false && \
+{
 echo ============================================================================
 echo "                        SGMM2 Training & Decoding                         "
 echo ============================================================================
@@ -158,7 +176,10 @@ steps/decode_sgmm2.sh --nj "$decode_nj" --cmd "$decode_cmd"\
 steps/decode_sgmm2.sh --nj "$decode_nj" --cmd "$decode_cmd"\
  --transform-dir exp/tri3/decode_test exp/sgmm2_4/graph data/test \
  exp/sgmm2_4/decode_test
+}
 
+false && \
+{
 echo ============================================================================
 echo "                    MMI + SGMM2 Training & Decoding                       "
 echo ============================================================================
@@ -185,7 +206,10 @@ for iter in 1 2 3 4; do
    --transform-dir exp/tri3/decode_test data/lang_test_bg data/test \
    exp/sgmm2_4/decode_test exp/sgmm2_4_mmi_b0.1/decode_test_it$iter
 done
+}
 
+false && \
+{
 echo ============================================================================
 echo "                    DNN Hybrid Training & Decoding                        "
 echo ============================================================================
@@ -223,6 +247,7 @@ for iter in 1 2 3 4; do
    data/test data/lang_test_bg exp/tri4_nnet/decode_test \
    exp/sgmm2_4_mmi_b0.1/decode_test_it$iter exp/combine_2/decode_test_it$iter
 done
+}
 
 echo ============================================================================
 echo "               DNN Hybrid Training & Decoding (Karel's recipe)            "
