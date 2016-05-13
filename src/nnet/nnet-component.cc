@@ -17,6 +17,10 @@
 // See the Apache 2 License for the specific language governing permissions and
 // limitations under the License.
 
+
+#include <algorithm>
+#include <sstream>
+
 #include "nnet/nnet-component.h"
 
 #include "nnet/nnet-nnet.h"
@@ -26,7 +30,6 @@
 #include "nnet/nnet-linear-transform.h"
 #include "nnet/nnet-rbm.h"
 #include "nnet/nnet-various.h"
-#include "nnet/nnet-kl-hmm.h"
 
 #include "nnet/nnet-convolutional-component.h"
 #include "nnet/nnet-average-pooling-component.h"
@@ -42,8 +45,6 @@
 #include "nnet/nnet-sentence-averaging-component.h"
 #include "nnet/nnet-frame-pooling-component.h"
 #include "nnet/nnet-parallel-component.h"
-
-#include <sstream>
 
 namespace kaldi {
 namespace nnet1 {
@@ -80,19 +81,19 @@ const struct Component::key_value Component::kMarkerMap[] = {
 
 
 const char* Component::TypeToMarker(ComponentType t) {
-  int32 N=sizeof(kMarkerMap)/sizeof(kMarkerMap[0]);
-  for(int i=0; i<N; i++) {
+  int32 N = sizeof(kMarkerMap) / sizeof(kMarkerMap[0]);
+  for (int i = 0; i < N; i++) {
     if (kMarkerMap[i].key == t) return kMarkerMap[i].value;
   }
-  KALDI_ERR << "Unknown type" << t;
+  KALDI_ERR << "Unknown type : " << t;
   return NULL;
 }
 
 Component::ComponentType Component::MarkerToType(const std::string &s) {
   std::string s_lowercase(s);
-  std::transform(s.begin(), s.end(), s_lowercase.begin(), ::tolower); // lc
-  int32 N=sizeof(kMarkerMap)/sizeof(kMarkerMap[0]);
-  for(int i=0; i<N; i++) {
+  std::transform(s.begin(), s.end(), s_lowercase.begin(), ::tolower);  // lc
+  int32 N = sizeof(kMarkerMap) / sizeof(kMarkerMap[0]);
+  for (int i = 0; i < N; i++) {
     std::string m(kMarkerMap[i].value);
     std::string m_lowercase(m);
     std::transform(m.begin(), m.end(), m_lowercase.begin(), ::tolower);
@@ -108,10 +109,10 @@ Component* Component::NewComponentOfType(ComponentType comp_type,
   Component *ans = NULL;
   switch (comp_type) {
     case Component::kAffineTransform :
-      ans = new AffineTransform(input_dim, output_dim); 
+      ans = new AffineTransform(input_dim, output_dim);
       break;
     case Component::kLinearTransform :
-      ans = new LinearTransform(input_dim, output_dim); 
+      ans = new LinearTransform(input_dim, output_dim);
       break;
     case Component::kConvolutionalComponent :
       ans = new ConvolutionalComponent(input_dim, output_dim);
@@ -141,10 +142,10 @@ Component* Component::NewComponentOfType(ComponentType comp_type,
       ans = new Tanh(input_dim, output_dim);
       break;
     case Component::kDropout :
-      ans = new Dropout(input_dim, output_dim); 
+      ans = new Dropout(input_dim, output_dim);
       break;
     case Component::kLengthNormComponent :
-      ans = new LengthNormComponent(input_dim, output_dim); 
+      ans = new LengthNormComponent(input_dim, output_dim);
       break;
     case Component::kRbm :
       ans = new Rbm(input_dim, output_dim);
@@ -205,7 +206,7 @@ Component* Component::Init(const std::string &conf_line) {
   ReadToken(is, false, &component_type_string);
   ComponentType component_type = MarkerToType(component_type_string);
   ExpectToken(is, false, "<InputDim>");
-  ReadBasicType(is, false, &input_dim); 
+  ReadBasicType(is, false, &input_dim);
   ExpectToken(is, false, "<OutputDim>");
   ReadBasicType(is, false, &output_dim);
   Component *ans = NewComponentOfType(component_type, input_dim, output_dim);
@@ -226,21 +227,21 @@ Component* Component::Read(std::istream &is, bool binary) {
 
   ReadToken(is, binary, &token);
   // Skip the optional initial token,
-  if(token == "<Nnet>") {
-    ReadToken(is, binary, &token); 
+  if (token == "<Nnet>") {
+    ReadToken(is, binary, &token);
   }
   // Network ends after terminal token appears,
-  if(token == "</Nnet>") {
+  if (token == "</Nnet>") {
     return NULL;
   }
 
   // Read the dims,
-  ReadBasicType(is, binary, &dim_out); 
+  ReadBasicType(is, binary, &dim_out);
   ReadBasicType(is, binary, &dim_in);
 
   // Create the component,
   Component *ans = NewComponentOfType(MarkerToType(token), dim_in, dim_out);
-  
+
   // Read the content,
   ans->ReadData(is, binary);
 
@@ -257,12 +258,12 @@ void Component::Write(std::ostream &os, bool binary) const {
   WriteToken(os, binary, Component::TypeToMarker(GetType()));
   WriteBasicType(os, binary, OutputDim());
   WriteBasicType(os, binary, InputDim());
-  if(!binary) os << "\n";
+  if (!binary) os << "\n";
   this->WriteData(os, binary);
-  WriteToken(os, binary, "<!EndOfComponent>"); // Introduce component separator.
-  if(!binary) os << "\n";
+  WriteToken(os, binary, "<!EndOfComponent>");  // Write component separator.
+  if (!binary) os << "\n";
 }
 
 
-} // namespace nnet1
-} // namespace kaldi
+}  // namespace nnet1
+}  // namespace kaldi
