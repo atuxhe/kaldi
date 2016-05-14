@@ -41,6 +41,7 @@
 
 #include "nnet/nnet-lstm-projected-streams.h"
 #include "nnet/nnet-blstm-projected-streams.h"
+#include "nnet/nnet-blclstm-projected-streams.h"
 
 #include "nnet/nnet-sentence-averaging-component.h"
 #include "nnet/nnet-frame-pooling-component.h"
