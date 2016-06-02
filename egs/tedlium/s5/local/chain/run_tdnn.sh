@@ -82,7 +82,8 @@ mkdir -p $dir
 
 local/nnet3/run_ivector_common.sh --stage $stage \
   --generate-alignments false \
-  --speed-perturb true || exit 1;
+  || exit 1;
+#  --speed-perturb true || exit 1;
 
 if [ $stage -le 9 ]; then
   # Get the alignments as lattices (gives the chain training more freedom).

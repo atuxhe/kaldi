@@ -19,7 +19,8 @@
 . cmd.sh
 . path.sh
 
-nj=40
+#nj=40
+nj=20
 decode_nj=8
 
 stage=0
@@ -158,10 +159,10 @@ if [ $stage -le 7 ]; then
   done
 fi
 # Run the DNN recipe on fMLLR feats:
-local/nnet/run_dnn.sh || exit 1
-for decode_dir in "exp/dnn4_pretrain-dbn_dnn/decode_test" "exp/dnn4_pretrain-dbn_dnn_smbr_i1lats/decode_test_it4"; do
-  steps/lmrescore_const_arpa.sh data/lang_test data/lang_rescore data/test $decode_dir $decode_dir.rescore
-done
+#local/nnet/run_dnn.sh || exit 1
+#for decode_dir in "exp/dnn4_pretrain-dbn_dnn/decode_test" "exp/dnn4_pretrain-dbn_dnn_smbr_i1lats/decode_test_it4"; do
+#  steps/lmrescore_const_arpa.sh data/lang_test data/lang_rescore data/test $decode_dir $decode_dir.rescore
+#done
 # DNN recipe with bottle-neck features
 #local/nnet/run_dnn_bn.sh
 # Rescore with 4-gram LM:

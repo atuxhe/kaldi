@@ -58,6 +58,7 @@ class Component {
 
     kActivationFunction = 0x0200,
     kSoftmax,
+    kHiddenSoftmax,
     kBlockSoftmax,
     kSigmoid,
     kTanh,
@@ -81,7 +82,8 @@ class Component {
     kMaxPoolingComponent,
     kMaxPooling2DComponent,
     kFramePoolingComponent,
-    kParallelComponent
+    kParallelComponent,
+    kMultiBasisComponent
   } ComponentType;
 
   /// A pair of type and marker,
@@ -226,7 +228,7 @@ class UpdatableComponent : public Component {
   virtual void GetParams(VectorBase<BaseFloat> *params) const = 0;
 
   /// Set the trainable parameters from, reshaped as a vector,
-  virtual void SetParams(const VectorBase<BaseFloat>& params) = 0;
+  virtual void SetParams(const VectorBase<BaseFloat> &params) = 0;
 
   /// Compute gradient and update parameters,
   virtual void Update(const CuMatrixBase<BaseFloat> &input,
