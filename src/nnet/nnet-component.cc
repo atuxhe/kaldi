@@ -52,35 +52,6 @@ namespace kaldi {
 namespace nnet1 {
 
 const struct Component::key_value Component::kMarkerMap[] = {
-<<<<<<< HEAD
-  { Component::kAffineTransform,"<AffineTransform>" },
-  { Component::kLinearTransform,"<LinearTransform>" },
-  { Component::kConvolutionalComponent,"<ConvolutionalComponent>"},
-  { Component::kConvolutional2DComponent,"<Convolutional2DComponent>"},
-  { Component::kLstmProjectedStreams,"<LstmProjectedStreams>"},
-  { Component::kBLstmProjectedStreams,"<BLstmProjectedStreams>"},
-  { Component::kBLCLstmProjectedStreams,"<BLCLstmProjectedStreams>"},
-  { Component::kSoftmax,"<Softmax>" },
-  { Component::kBlockSoftmax,"<BlockSoftmax>" },
-  { Component::kSigmoid,"<Sigmoid>" },
-  { Component::kTanh,"<Tanh>" },
-  { Component::kDropout,"<Dropout>" },
-  { Component::kLengthNormComponent,"<LengthNormComponent>" },
-  { Component::kRbm,"<Rbm>" },
-  { Component::kSplice,"<Splice>" },
-  { Component::kCopy,"<Copy>" },
-  { Component::kAddShift,"<AddShift>" },
-  { Component::kRescale,"<Rescale>" },
-  { Component::kKlHmm,"<KlHmm>" },
-  { Component::kAveragePoolingComponent,"<AveragePoolingComponent>"},
-  { Component::kAveragePooling2DComponent,"<AveragePooling2DComponent>"},
-  { Component::kMaxPoolingComponent, "<MaxPoolingComponent>"},
-  { Component::kMaxPooling2DComponent, "<MaxPooling2DComponent>"},
-  { Component::kSentenceAveragingComponent,"<SentenceAveragingComponent>"},
-  { Component::kSimpleSentenceAveragingComponent,"<SimpleSentenceAveragingComponent>"},
-  { Component::kFramePoolingComponent, "<FramePoolingComponent>"},
-  { Component::kParallelComponent, "<ParallelComponent>"},
-=======
   { Component::kAffineTransform, "<AffineTransform>" },
   { Component::kLinearTransform, "<LinearTransform>" },
   { Component::kConvolutionalComponent, "<ConvolutionalComponent>" },
@@ -109,7 +80,7 @@ const struct Component::key_value Component::kMarkerMap[] = {
   { Component::kFramePoolingComponent, "<FramePoolingComponent>" },
   { Component::kParallelComponent, "<ParallelComponent>" },
   { Component::kMultiBasisComponent, "<MultiBasisComponent>" },
->>>>>>> 05f5a5cb56dcb3ced6ea2c7694f3faf70886127f
+  { Component::kBLCLstmProjectedStreams,"<BLCLstmProjectedStreams>"},
 };
 
 
