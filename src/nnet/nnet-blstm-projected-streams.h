@@ -72,15 +72,18 @@ class BLstmProjectedStreams : public UpdatableComponent {
   void InitData(std::istream &is) {
     // define options,
     float param_scale = 0.02;
+    float fgate_bias_init = 0.0;
     // parse the line from prototype,
     std::string token;
-    while (!is.eof()) {
+   
+    while (is >> std::ws, !is.eof()) {
       ReadToken(is, false, &token);
       /**/ if (token == "<CellDim>") ReadBasicType(is, false, &ncell_);
       else if (token == "<ClipGradient>") ReadBasicType(is, false, &clip_gradient_);
       else if (token == "<LearnRateCoef>") ReadBasicType(is, false, &learn_rate_coef_);
       else if (token == "<BiasLearnRateCoef>") ReadBasicType(is, false, &bias_learn_rate_coef_);
       else if (token == "<ParamScale>") ReadBasicType(is, false, &param_scale);
+      else if (token == "<FgateBias>") ReadBasicType(is, false, &fgate_bias_init);
       // else if (token == "<DropoutRate>") ReadBasicType(is, false, &dropout_rate_);
       else KALDI_ERR << "Unknown token " << token << ", a typo in config?"
                      << " (CellDim|ClipGradient|LearnRateCoef|BiasLearnRateCoef|ParamScale)";
@@ -112,6 +115,10 @@ class BLstmProjectedStreams : public UpdatableComponent {
     RandUniform(0.0, 2.0 * param_scale, &f_bias_);
     RandUniform(0.0, 2.0 * param_scale, &b_bias_);
 
+    if (fgate_bias_init != 0.0) {   // reset the bias of the forget gates
+       f_bias_.Range(2 * ncell_, ncell_).Set(fgate_bias_init);
+       b_bias_.Range(2 * ncell_, ncell_).Set(fgate_bias_init);
+    }
     // forward direction
     f_peephole_i_c_.Resize(ncell_, kUndefined);
     f_peephole_f_c_.Resize(ncell_, kUndefined);
@@ -573,6 +580,10 @@ class BLstmProjectedStreams : public UpdatableComponent {
     int DEBUG = 0;
 
     int32 nstream_ = sequence_lengths_.size();
+    if (nstream_ == 0) {
+        nstream_ = 1;
+        sequence_lengths_.push_back(in.NumRows());
+    }
     KALDI_ASSERT(in.NumRows() % nstream_ == 0);
     int32 T = in.NumRows() / nstream_;
     int32 S = nstream_;
