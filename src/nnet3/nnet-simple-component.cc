@@ -52,7 +52,7 @@ void PnormComponent::Propagate(const ComponentPrecomputedIndexes *indexes,
                                const CuMatrixBase<BaseFloat> &in,
                                CuMatrixBase<BaseFloat> *out) const {
   BaseFloat p = 2.0;
-  out->GroupPnorm(in, p);  // TODO: when done, replace with Group2Norm function.
+  out->GroupPnorm(in, p);
 }
 
 void PnormComponent::Backprop(const std::string &debug_info,
@@ -62,11 +62,10 @@ void PnormComponent::Backprop(const std::string &debug_info,
                               const CuMatrixBase<BaseFloat> &out_deriv,
                               Component *to_update,
                               CuMatrixBase<BaseFloat> *in_deriv) const {
-  if (!in_deriv)  return;
+  if (!in_deriv)
+    return;
   BaseFloat p = 2.0;
-  // TODO: use Group2NormDeriv when done.
-  in_deriv->GroupPnormDeriv(in_value, out_value, p);
-  in_deriv->MulRowsGroupMat(out_deriv);
+  in_deriv->DiffGroupPnorm(in_value, out_value, out_deriv, p);
 }
 
 void PnormComponent::Read(std::istream &is, bool binary) {
@@ -558,21 +557,35 @@ void ClipGradientComponent::Read(std::istream &is, bool binary) {
   ReadBasicType(is, binary, &clipping_threshold_);
   ExpectToken(is, binary, "<NormBasedClipping>");
   ReadBasicType(is, binary, &norm_based_clipping_);
-  ExpectToken(is, binary, "<SelfRepairClippedProportionThreshold>");
-  ReadBasicType(is, binary, &self_repair_clipped_proportion_threshold_);
-  ExpectToken(is, binary, "<SelfRepairTarget>");
-  ReadBasicType(is, binary, &self_repair_target_);
-  ExpectToken(is, binary, "<SelfRepairScale>");
-  ReadBasicType(is, binary, &self_repair_scale_);
-  ExpectToken(is, binary, "<NumElementsClipped>");
+  std::string token;
+  ReadToken(is, binary, &token);
+  if (token == "<SelfRepairClippedProportionThreshold>") {
+    ReadBasicType(is, binary, &self_repair_clipped_proportion_threshold_);
+    ExpectToken(is, binary, "<SelfRepairTarget>");
+    ReadBasicType(is, binary, &self_repair_target_);
+    ExpectToken(is, binary, "<SelfRepairScale>");
+    ReadBasicType(is, binary, &self_repair_scale_);
+    ExpectToken(is, binary, "<NumElementsClipped>");
+  } else {
+    self_repair_clipped_proportion_threshold_ = 1.0;
+    self_repair_target_ = 0.0;
+    self_repair_scale_ = 0.0;
+    KALDI_ASSERT(token == "<NumElementsClipped>");
+  }
   ReadBasicType(is, binary, &num_clipped_);
   ExpectToken(is, binary, "<NumElementsProcessed>");
   ReadBasicType(is, binary, &count_);
-  ExpectToken(is, binary, "<NumSelfRepaired>");
-  ReadBasicType(is, binary, &num_self_repaired_);
-  ExpectToken(is, binary, "<NumBackpropped>");
-  ReadBasicType(is, binary, &num_backpropped_);
-  ExpectToken(is, binary, "</ClipGradientComponent>");
+  ReadToken(is, binary, &token);
+  if (token == "<NumSelfRepaired>") {
+    ReadBasicType(is, binary, &num_self_repaired_);
+    ExpectToken(is, binary, "<NumBackpropped>");
+    ReadBasicType(is, binary, &num_backpropped_);
+    ExpectToken(is, binary, "</ClipGradientComponent>");
+  } else {
+    num_self_repaired_ = 0;
+    num_backpropped_ = 0;
+    KALDI_ASSERT(token == "</ClipGradientComponent>");
+  }
 }
 
 void ClipGradientComponent::Write(std::ostream &os, bool binary) const {
