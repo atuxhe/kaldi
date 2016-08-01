@@ -108,17 +108,28 @@ void cudaF_min_mat_cols(int Gr, int Bl, float* result, const float* mat, const M
 void cudaF_sum_mat_cols(int Gr, int Bl, float* result, const float* mat, const MatrixDim d);
 void cudaF_replace_value(int Gr, int Bl, float *v, int dim, float orig, float changed);
 void cudaF_set_bias_params(int Gr, int Bl, float* v, const float* a, float param_1, float param_2, float param_3, int* flag, int dim);
-void cudaF_copy_from_vec_df(int Gr, int Bl, double* v_out, const float* v_in, int dim);
-void cudaF_copy_from_vec_fd(int Gr, int Bl, float* v_out, const float* v_in, int dim);
+void cublas_copy_kaldi_fd(int Gr, int Bl, int n, const float* x,
+    int incx, double* y, int incy);
+void cublas_copy_kaldi_df(int Gr, int Bl, int n, const double* x,
+    int incx, float* y, int incy);
 void cudaF_vec_mul_elements(int Gr, int Bl, float* v, const float* a, int dim);
 void cudaF_vec_soft_max(int Gr, int Bl, float* v, int dim);
 void cudaF_vec_min(int Gr, int Bl, const float* v, float* value, int dim, int inc);
 void cudaF_vec_max(int Gr, int Bl, const float* v, float* value, int dim, int inc);
 void cudaF_trace_mat_mat_trans(dim3 Gr, dim3 Bl, const float* A, const float* B, MatrixDim dA, int B_stride, float* value);
 void cudaF_trace_mat_mat(dim3 Gr, dim3 Bl, const float* A, const float* B, MatrixDim dA, int B_stride, float* value);
-void cudaF_add_diag_mat_mat(int Gr, int Bl, float alpha, float* v, int v_dim, const float* M,
-                            int M_cols, int M_row_stride, int M_col_stride, const float *N, int N_row_stride,
-                            int N_col_stride, int threads_per_element, float beta);
+void cudaF_add_diag_mat_mat_MNT(int Gr, int Bl, const float alpha,
+                                const float* M, const MatrixDim dim_M,
+                                const float* N, const int stride_N,
+                                const float beta, float* v);
+void cudaF_add_diag_mat_mat_MTN(dim3 Gr, dim3 Bl, const float alpha,
+                                const float* M, const int strid_M,
+                                const float* N, const MatrixDim dim_N,
+                                const float beta, float* v);
+void cudaF_add_diag_mat_mat_MN(dim3 Gr, dim3 Bl, const float alpha,
+                               const float* M, const int strid_M,
+                               const float* N, const MatrixDim dim_N,
+                               const float beta, float* v);
 void cudaF_add_vec_vec(int Gr, int Bl, float alpha, float* v, const float* x, const float* y, float beta, int dim);
 void cudaF_copy_col_from_mat_df(int Gr, int Bl, double* v, int col, const float* mat, MatrixDim dmat, int dim);
 void cudaF_copy_col_from_mat_fd(int Gr, int Bl, float* v, int col, const float* mat, MatrixDim dmat, int dim);
@@ -260,17 +271,24 @@ void cudaD_min_mat_cols(int Gr, int Bl, double* result, const double* mat, const
 void cudaD_sum_mat_cols(int Gr, int Bl, double* result, const double* mat, const MatrixDim d);
 void cudaD_replace_value(int Gr, int Bl, double *v, int dim, double orig, double changed);
 void cudaD_set_bias_params(int Gr, int Bl, double* v, const double* a, double param_1, double param_2, double param_3, int* flag, int dim);
-void cudaD_copy_from_vec_df(int Gr, int Bl, double* v_out, const double* v_in, int dim);
-void cudaD_copy_from_vec_fd(int Gr, int Bl, float* v_out, const double* v_in, int dim);
 void cudaD_vec_mul_elements(int Gr, int Bl, double* v, const double* a, int dim);
 void cudaD_vec_soft_max(int Gr, int Bl, double* v, int dim);
 void cudaD_vec_min(int Gr, int Bl, const double* v, double* value, int dim, int inc);
 void cudaD_vec_max(int Gr, int Bl, const double* v, double* value, int dim, int inc);
 void cudaD_trace_mat_mat_trans(dim3 Gr, dim3 Bl, const double* A, const double* B, MatrixDim dA, int B_stride, double* value);
 void cudaD_trace_mat_mat(dim3 Gr, dim3 Bl, const double* A, const double* B, MatrixDim dA, int B_stride, double* value);
-void cudaD_add_diag_mat_mat(int Gr, int Bl, double alpha, double* v, int v_dim, const double* M,
-                            int M_cols, int M_row_stride, int M_col_stride, const double *N, int N_row_stride,
-                            int N_col_stride, int threads_per_element, double beta);
+void cudaD_add_diag_mat_mat_MNT(int Gr, int Bl, const double alpha,
+                                const double* M, const MatrixDim dim_M,
+                                const double* N, const int stride_N,
+                                const double beta, double* v);
+void cudaD_add_diag_mat_mat_MTN(dim3 Gr, dim3 Bl, const double alpha,
+                                const double* M, const int strid_M,
+                                const double* N, const MatrixDim dim_N,
+                                const double beta, double* v);
+void cudaD_add_diag_mat_mat_MN(dim3 Gr, dim3 Bl, const double alpha,
+                               const double* M, const int strid_M,
+                               const double* N, const MatrixDim dim_N,
+                               const double beta, double* v);
 void cudaD_add_vec_vec(int Gr, int Bl, double alpha, double* v, const double* x, const double* y, double beta, int dim);
 void cudaD_copy_col_from_mat_df(int Gr, int Bl, double* v, int col, const double* mat, MatrixDim dmat, int dim);
 void cudaD_copy_col_from_mat_fd(int Gr, int Bl, float* v, int col, const double* mat, MatrixDim dmat, int dim);
