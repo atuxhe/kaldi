@@ -43,6 +43,7 @@ num_tgt=           # (optional) specifiy number of NN outputs, to be used with '
 
 # training scheduler,
 learn_rate=0.008   # initial learning rate,
+momentum=0.0
 scheduler_opts=    # options, passed to the training scheduler,
 train_tool=        # optionally change the training tool,
 train_tool_opts=   # options for the training tool,
@@ -56,6 +57,7 @@ copy_feats_compress=true # compress feats while resaving
 seed=777            # seed value used for data-shuffling, nn-initialization, and training,
 skip_cuda_check=false
 
+shuffle_lists=true
 # End configuration.
 
 echo "$0 $@"  # Print the command line for logging
@@ -179,13 +181,21 @@ else
   cp $data_cv/feats.scp $dir/cv.scp
 fi
 # shuffle the list,
-utils/shuffle_list.pl --srand ${seed:-777} <$dir/train_sorted.scp >$dir/train.scp
-
+if [ "$shuffle_lists" == "true" ]; then
+  utils/shuffle_list.pl --srand ${seed:-777} <$dir/train_sorted.scp >$dir/train.scp
+else
+  cp $dir/train_sorted.scp $dir/train.scp
+fi
 # create a 10k utt subset for global cmvn estimates,
 head -n 10000 $dir/train.scp > $dir/train.scp.10k
 
 # for debugging, add lists with non-local features,
-utils/shuffle_list.pl --srand ${seed:-777} <$data/feats.scp >$dir/train.scp_non_local
+if [ "$shuffle_lists" == "true" ]; then
+  utils/shuffle_list.pl --srand ${seed:-777} <$data/feats.scp >$dir/train.scp_non_local
+else
+  cp $data/feats.scp $dir/train.scp_non_local
+fi
+
 cp $data_cv/feats.scp $dir/cv.scp_non_local
 
 ###### OPTIONALLY IMPORT FEATURE SETTINGS (from pre-training) ######
@@ -454,8 +464,8 @@ steps/nnet/train_scheduler.sh \
   ${scheduler_opts} \
   ${train_tool:+ --train-tool "$train_tool"} \
   ${train_tool_opts:+ --train-tool-opts "$train_tool_opts"} \
-  ${feature_transform:+ --feature-transform $feature_transform} \
-  --learn-rate $learn_rate \
+  ${feature_transform:+ --feature-transform "$feature_transform"} \
+  --learn-rate $learn_rate --momentum $momentum \
   ${frame_weights:+ --frame-weights "$frame_weights"} \
   ${utt_weights:+ --utt-weights "$utt_weights"} \
   ${config:+ --config $config} \

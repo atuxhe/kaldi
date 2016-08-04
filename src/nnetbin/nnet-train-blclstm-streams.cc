@@ -71,13 +71,13 @@ int main(int argc, char *argv[]) {
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA"); 
     
     //<jiayu>
-    int32 targets_delay=5;
+    int32 targets_delay=0;
     po.Register("targets-delay", &targets_delay, "---LSTM--- BPTT targets delay"); 
 
-    int32 batch_size=20;
+    int32 batch_size=32;
     po.Register("batch-size", &batch_size, "---LSTM--- BPTT batch size"); 
 
-    int32 num_stream=4;
+    int32 num_stream=32;
     po.Register("num-stream", &num_stream, "---LSTM--- BPTT multi-stream training"); 
 
     int32 dump_interval=0;

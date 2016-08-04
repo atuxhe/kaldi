@@ -198,6 +198,12 @@ BaseFloat VectorToPosteriorEntry(
     BaseFloat min_post,
     std::vector<std::pair<int32, BaseFloat> > *post_entry);
 
+BaseFloat MatrixToPosterior(
+    const Matrix<BaseFloat> &post_matrix,
+    int32 num_gselect,
+    BaseFloat min_post,
+    Posterior *post);
+
 /// Convert an alignment to a posterior (with a scale of 1.0 on
 /// each entry).
 void AlignmentToPosterior(const std::vector<int32> &ali,

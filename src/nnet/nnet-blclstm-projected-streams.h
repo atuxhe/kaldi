@@ -55,7 +55,7 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     nrecur_(static_cast<int32>(output_dim/2)),
     nstream_(0),
     clip_gradient_(0.0)
-    // , dropout_rate_(0.0)
+    , dropout_rate_(0.0)
   { }
 
   ~BLCLstmProjectedStreams()
@@ -72,16 +72,19 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
   void InitData(std::istream &is) {
     // define options,
     float param_scale = 0.02;
+    float fgate_bias_init = 0.0;
     // parse the line from prototype,
     std::string token;
-    while (!is.eof()) {
+
+    while (is >> std::ws, !is.eof()) {
       ReadToken(is, false, &token);
       /**/ if (token == "<CellDim>") ReadBasicType(is, false, &ncell_);
       else if (token == "<ClipGradient>") ReadBasicType(is, false, &clip_gradient_);
       else if (token == "<LearnRateCoef>") ReadBasicType(is, false, &learn_rate_coef_);
       else if (token == "<BiasLearnRateCoef>") ReadBasicType(is, false, &bias_learn_rate_coef_);
       else if (token == "<ParamScale>") ReadBasicType(is, false, &param_scale);
-      // else if (token == "<DropoutRate>") ReadBasicType(is, false, &dropout_rate_);
+      else if (token == "<FgateBias>") ReadBasicType(is, false, &fgate_bias_init);
+      else if (token == "<DropoutRate>") ReadBasicType(is, false, &dropout_rate_);
       else KALDI_ERR << "Unknown token " << token << ", a typo in config?"
                      << " (CellDim|ClipGradient|LearnRateCoef|BiasLearnRateCoef|ParamScale)";
     }
@@ -112,6 +115,10 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     RandUniform(0.0, 2.0 * param_scale, &f_bias_);
     RandUniform(0.0, 2.0 * param_scale, &b_bias_);
 
+    if (fgate_bias_init != 0.0) {   // reset the bias of the forget gates
+       f_bias_.Range(2 * ncell_, ncell_).Set(fgate_bias_init);
+       b_bias_.Range(2 * ncell_, ncell_).Set(fgate_bias_init);
+    }
     // forward direction
     f_peephole_i_c_.Resize(ncell_, kUndefined);
     f_peephole_f_c_.Resize(ncell_, kUndefined);
@@ -173,9 +180,9 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
           else if (token == "<ClipGradient>") ReadBasicType(is, binary, &clip_gradient_);
           else KALDI_ERR << "Unknown token: " << token;
           break;
-        // case 'D': ExpectToken(is, binary, "<DropoutRate>");
-        //   ReadBasicType(is, binary, &dropout_rate_);
-        //   break;
+        case 'D': ExpectToken(is, binary, "<DropoutRate>");
+          ReadBasicType(is, binary, &dropout_rate_);
+          break;
         case 'L': ExpectToken(is, binary, "<LearnRateCoef>");
           ReadBasicType(is, binary, &learn_rate_coef_);
           break;
@@ -241,8 +248,8 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     WriteBasicType(os, binary, ncell_);
     WriteToken(os, binary, "<ClipGradient>");
     WriteBasicType(os, binary, clip_gradient_);
-    // WriteToken(os, binary, "<DropoutRate>");
-    // WriteBasicType(os, binary, dropout_rate_);
+    WriteToken(os, binary, "<DropoutRate>");
+    WriteBasicType(os, binary, dropout_rate_);
 
     WriteToken(os, binary, "<LearnRateCoef>");
     WriteBasicType(os, binary, learn_rate_coef_);
@@ -602,7 +609,6 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     KALDI_ASSERT(in.NumRows() % nstream_ == 0);
     int32 T = in.NumRows() / nstream_;
     int32 S = nstream_;
-    KALDI_ASSERT(T == (ncentctx_ + nrightctx_));
 
     // 0:forward pass history, [1, T]:current sequence, T+1:dummy
     // forward direction
@@ -713,11 +719,8 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
         std::cerr << "activation of m: " << y_m;
         std::cerr << "activation of r: " << y_r;
       }
-      
     }
 
-    // backward direction
-    B_YGIFO.RowRange(1*S, T*S).AddMatMat(1.0, in, kNoTrans, b_w_gifo_x_, kTrans, 0.0);
     //// LSTM forward dropout
     //// Google paper 2014: Recurrent Neural Network Regularization
     //// by Wojciech Zaremba, Ilya Sutskever, Oriol Vinyals
@@ -728,6 +731,9 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     //  dropout_mask_.ApplyHeaviside();   // -tive -> 0.0, +tive -> 1.0
     //  YGIFO.RowRange(1*S,T*S).MulElements(dropout_mask_);
     // }
+    
+    // backward direction
+    B_YGIFO.RowRange(1*S, T*S).AddMatMat(1.0, in, kNoTrans, b_w_gifo_x_, kTrans, 0.0);
 
     // bias -> g, i, f, o
     B_YGIFO.RowRange(1*S, T*S).AddVecToRows(1.0, b_bias_);
@@ -786,10 +792,10 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
       // m -> r
       y_r.AddMatMat(1.0, y_m, kNoTrans, b_w_r_m_, kTrans, 0.0);
 
-      for (int s = 0; s < S; s++) {
+      //for (int s = 0; s < S; s++) {
          //if (t > sequence_lengths_[s])
          //   y_all.Row(s).SetZero();
-      }
+      //}
 
       if (DEBUG) {
         std::cerr << "backward direction forward-pass frame " << t << "\n";
@@ -811,10 +817,9 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     // backward part
     YR_FB.ColRange(nrecur_, nrecur_).CopyFromMat(b_propagate_buf_.ColRange(7*ncell_, nrecur_));
     // recurrent projection layer is also feed-forward as BLSTM output
-    out->CopyFromMat(YR_FB.RowRange(1*S, ncentctx_*S));
-
-    // now the last frame state becomes previous network state for next batch
-    prev_nnet_state_.CopyFromMat(f_propagate_buf_.RowRange(ncentctx_*S, S));
+    out->CopyFromMat(YR_FB.RowRange(1*S, T*S));
+    // keep the prestate of forward direction
+    prev_nnet_state_.CopyFromMat(f_propagate_buf_.RowRange(T*S, S));
   }
 
 
@@ -827,10 +832,6 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     // the number of sequences to be processed in parallel
     int32 T = in.NumRows() / nstream_;
     int32 S = nstream_;
-
-    KALDI_ASSERT(T == (ncentctx_+nrightctx_));
-    T = ncentctx_;
-
     // disassembling forward-pass forward-propagation buffer by neuron type,
     CuSubMatrix<BaseFloat> F_YG(f_propagate_buf_.ColRange(0*ncell_, ncell_));
     CuSubMatrix<BaseFloat> F_YI(f_propagate_buf_.ColRange(1*ncell_, ncell_));
@@ -1215,17 +1216,14 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
   int32 nrecur_;  ///< recurrent projection layer dim
   int32 nstream_;
 
-  int32 ncentctx_;
-  int32 nrightctx_;
-
   CuMatrix<BaseFloat> prev_nnet_state_;
 
   // gradient-clipping value,
   BaseFloat clip_gradient_;
 
   // non-recurrent dropout
-  // BaseFloat dropout_rate_;
-  // CuMatrix<BaseFloat> dropout_mask_;
+  BaseFloat dropout_rate_;
+  CuMatrix<BaseFloat> dropout_mask_;
 
   // feed-forward connections: from x to [g, i, f, o]
   // forward direction

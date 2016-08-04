@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     ParseOptions po(usage);
 
     TrainingGraphCompilerOptions gopts;
-    int32 batch_size = 250;
+    int32 batch_size = 512;
     gopts.transition_scale = 0.0;  // Change the default to 0.0 since we will generally add the
     // transition probs in the alignment phase (since they change eacm time)
     gopts.self_loop_scale = 0.0;  // Ditto for self-loop probs.

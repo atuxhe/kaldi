@@ -28,7 +28,7 @@ parser = OptionParser(usage)
 #
 parser.add_option('--num-cells', dest='num_cells', type='int', default=800, 
                    help='Number of LSTM cells [default: %default]');
-parser.add_option('--num-recurrent', dest='num_recurrent', type='int', default=512, 
+parser.add_option('--num-recurrent', dest='num_recurrent', type='int', default=256, 
                    help='Number of LSTM recurrent units [default: %default]');
 parser.add_option('--num-layers', dest='num_layers', type='int', default=2, 
                    help='Number of LSTM layers [default: %default]');
@@ -38,6 +38,8 @@ parser.add_option('--param-stddev-factor', dest='param_stddev_factor', type='flo
                    help='Standard deviation in output layer [default: %default]');
 parser.add_option('--clip-gradient', dest='clip_gradient', type='float', default=5.0, 
                    help='Clipping constant applied to gradients [default: %default]');
+parser.add_option('--fgate-bias', dest='fgate_bias', type='float', default=1.0, 
+                   help='init forget bias [default: %default]');
 #
 (o,args) = parser.parse_args()
 if len(args) != 2 : 
@@ -57,13 +59,13 @@ if len(args) != 2 :
 print "<NnetProto>"
 # normally we won't use more than 2 layers of LSTM
 if o.num_layers == 1:
-    print "<BLstmProjectedStreams> <InputDim> %d <OutputDim> %d <CellDim> %s <ParamScale> %f <ClipGradient> %f" % \
-        (feat_dim, 2*o.num_recurrent, o.num_cells, o.lstm_stddev_factor, o.clip_gradient)
+    print "<BLstmProjectedStreams> <InputDim> %d <OutputDim> %d <CellDim> %s <ParamScale> %f <ClipGradient> %f <FgateBias> %f" % \
+        (feat_dim, 2*o.num_recurrent, o.num_cells, o.lstm_stddev_factor, o.clip_gradient, o.fgate_bias)
 elif o.num_layers == 2:
-    print "<BLstmProjectedStreams> <InputDim> %d <OutputDim> %d <CellDim> %s <ParamScale> %f <ClipGradient> %f" % \
-        (feat_dim, 2*o.num_recurrent, o.num_cells, o.lstm_stddev_factor, o.clip_gradient)
-    print "<BLstmProjectedStreams> <InputDim> %d <OutputDim> %d <CellDim> %s <ParamScale> %f <ClipGradient> %f" % \
-        (2*o.num_recurrent, 2*o.num_recurrent, o.num_cells, o.lstm_stddev_factor, o.clip_gradient)
+    print "<BLstmProjectedStreams> <InputDim> %d <OutputDim> %d <CellDim> %s <ParamScale> %f <ClipGradient> %f <FgateBias> %f" % \
+        (feat_dim, 2*o.num_recurrent, o.num_cells, o.lstm_stddev_factor, o.clip_gradient, o.fgate_bias)
+    print "<BLstmProjectedStreams> <InputDim> %d <OutputDim> %d <CellDim> %s <ParamScale> %f <ClipGradient> %f <FgateBias> %f" % \
+        (2*o.num_recurrent, 2*o.num_recurrent, o.num_cells, o.lstm_stddev_factor, o.clip_gradient, o.fgate_bias)
 else:
     sys.stderr.write("make_lstm_proto.py ERROR: more than 2 layers of LSTM, not supported yet.\n")
     sys.exit(1)

@@ -77,6 +77,11 @@ int main(int argc, char *argv[]) {
     po.Register("use-gpu", &use_gpu,
         "yes|no|optional, only has effect if compiled with CUDA");
 
+    //// Add dummy option for compatibility with default scheduler,
+    bool randomize = false;
+    po.Register("randomize", &randomize,
+        "Dummy, for compatibility with 'steps/nnet/train_scheduler.sh'");
+
     po.Read(argc, argv);
 
     if (po.NumArgs() != 3 + (crossvalidate ? 0 : 1)) {

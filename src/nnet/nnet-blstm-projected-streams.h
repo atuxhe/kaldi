@@ -582,7 +582,7 @@ class BLstmProjectedStreams : public UpdatableComponent {
     int32 nstream_ = sequence_lengths_.size();
     if (nstream_ == 0) {
         nstream_ = 1;
-        sequence_lengths_.push_back(in.NumRows());
+        //sequence_lengths_.push_back(in.NumRows());
     }
     KALDI_ASSERT(in.NumRows() % nstream_ == 0);
     int32 T = in.NumRows() / nstream_;
@@ -698,8 +698,6 @@ class BLstmProjectedStreams : public UpdatableComponent {
       }
     }
 
-    // backward direction
-    B_YGIFO.RowRange(1*S, T*S).AddMatMat(1.0, in, kNoTrans, b_w_gifo_x_, kTrans, 0.0);
     //// LSTM forward dropout
     //// Google paper 2014: Recurrent Neural Network Regularization
     //// by Wojciech Zaremba, Ilya Sutskever, Oriol Vinyals
@@ -710,6 +708,9 @@ class BLstmProjectedStreams : public UpdatableComponent {
     //  dropout_mask_.ApplyHeaviside();   // -tive -> 0.0, +tive -> 1.0
     //  YGIFO.RowRange(1*S,T*S).MulElements(dropout_mask_);
     // }
+    
+    // backward direction
+    B_YGIFO.RowRange(1*S, T*S).AddMatMat(1.0, in, kNoTrans, b_w_gifo_x_, kTrans, 0.0);
 
     // bias -> g, i, f, o
     B_YGIFO.RowRange(1*S, T*S).AddVecToRows(1.0, b_bias_);
@@ -768,9 +769,11 @@ class BLstmProjectedStreams : public UpdatableComponent {
       // m -> r
       y_r.AddMatMat(1.0, y_m, kNoTrans, b_w_r_m_, kTrans, 0.0);
 
+      if (S > 1) { 
       for (int s = 0; s < S; s++) {
          if (t > sequence_lengths_[s])
             y_all.Row(s).SetZero();
+      }
       }
 
       if (DEBUG) {

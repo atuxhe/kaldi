@@ -19,7 +19,8 @@
 . cmd.sh
 . path.sh
 
-nj=40
+#nj=40
+nj=20
 decode_nj=8
 
 stage=0
@@ -27,7 +28,7 @@ stage=0
 
 # Data preparation
 if [ $stage -le 0 ]; then
-  local/download_data.sh || exit 1
+  #local/download_data.sh || exit 1
 
   local/prepare_data.sh || exit 1
 

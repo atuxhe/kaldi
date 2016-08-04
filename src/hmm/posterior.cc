@@ -525,4 +525,61 @@ template void PosteriorToPdfMatrix<double>(const Posterior &post,
                                            const TransitionModel &model,
                                            Matrix<double> *mat);
 
+
+BaseFloat MatrixToPosterior(
+    const Matrix<BaseFloat> &post_matrix,
+    int32 num_gselect,
+    BaseFloat min_post,
+    Posterior *post) {
+  KALDI_ASSERT(num_gselect > 0 && min_post >= 0 && min_post < 1.0);
+  // we name num_gauss assuming each entry in log_likes represents a Gaussian;
+  // it doesn't matter if they don't.
+  int32 num_gauss = post_matrix.NumCols();
+
+  KALDI_ASSERT(num_gauss > 0);
+  if (num_gselect > num_gauss)
+    num_gselect = num_gauss;
+  Vector<BaseFloat> post_vector(num_gauss);
+  std::vector<std::pair<int32, BaseFloat> > temp_post(num_gauss);
+  std::vector<std::pair<int32, BaseFloat> > post_entry(num_gselect);
+  
+  for(int32 i = 0; i < post_matrix.NumRows(); ++i) {
+    post_vector.CopyRowFromMat(post_matrix, i);
+    for (int32 g = 0; g < num_gauss; g++)
+      temp_post[g] = std::pair<int32, BaseFloat>(g, post_vector(g));
+    CompareReverseSecond compare;
+    // Sort in decreasing order on posterior.  For efficiency we
+    // going to output, to be sorted.
+    std::nth_element(temp_post.begin(),
+                   temp_post.begin() + num_gselect, temp_post.end(),
+                   compare);
+    std::sort(temp_post.begin(), temp_post.begin() + num_gselect,
+            compare);
+    int n_select = 0;
+    BaseFloat tot = 0.0;
+    while (n_select < num_gselect) {
+      tot += temp_post[n_select].second;
+      ++n_select;
+      if (tot > 0.98f) break;
+    }
+    post_entry.clear();
+    post_entry.insert(post_entry.end(),
+                     temp_post.begin(), temp_post.begin() + n_select);
+    while (post_entry.size() > 1 && post_entry.back().second < min_post)
+      post_entry.pop_back();  
+    // Now renormalize to sum to one after pruning.
+    tot = 0.0;
+    size_t size = post_entry.size();
+    for (size_t i = 0; i < size; i++)
+      tot += post_entry[i].second;
+    BaseFloat inv_tot = 1.0 / tot;
+    for (size_t i = 0; i < size; i++)
+      post_entry[i].second *= inv_tot;
+
+    post->push_back(post_entry);
+  }
+
+  return 1.0;
+}
+
 } // End namespace kaldi

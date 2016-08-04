@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
     NnetTrainOptions trn_opts;
     trn_opts.Register(&po);
-
+    
     bool binary = true;
     po.Register("binary", &binary, "Write output in binary mode");
 
@@ -64,11 +64,11 @@ int main(int argc, char *argv[]) {
     po.Register("objective-function", &objective_function,
         "Objective function : xent|mse");
 
-    /*
-    int32 length_tolerance = 5;
+    
+    int32 length_tolerance = 3;
     po.Register("length-tolerance", &length_tolerance,
       "Allowed length difference of features/targets (frames)");
-
+    /*
     std::string frame_weights;
     po.Register("frame-weights", &frame_weights,
       "Per-frame weights to scale gradients (frame selection/weighting).");
@@ -94,6 +94,10 @@ int main(int argc, char *argv[]) {
     po.Register("randomize", &randomize,
         "Dummy, for compatibility with 'steps/nnet/train_scheduler.sh'");
     ////
+    
+    //for (int i = 0; i < argc; ++i ) {
+    //    KALDI_LOG << argv[i];    
+    //}
 
     po.Read(argc, argv);
 
@@ -190,9 +194,10 @@ int main(int argc, char *argv[]) {
             feature_reader.Next();
             continue;
           }
-          const Posterior& target = target_reader.Value(key);
+          Posterior target = target_reader.Value(key);
 
           // check that the length matches,
+#if 0
           if (feat_transf.NumRows() != target.size()) {
             KALDI_WARN << key
               << ", length miss-match between feats and targets, skipping";
@@ -200,6 +205,29 @@ int main(int argc, char *argv[]) {
             feature_reader.Next();
             continue;
           }
+#else
+        // correct small length mismatch ... or drop sentence
+        {
+          // add lengths to vector
+          std::vector<int32> length;
+          length.push_back(feat_transf.NumRows());
+          length.push_back(target.size());
+          // find min, max
+          int32 min = *std::min_element(length.begin(), length.end());
+          int32 max = *std::max_element(length.begin(), length.end());
+          // fix or drop ?
+          if (max - min < length_tolerance) {
+            if (feat_transf.NumRows() != min) feat_transf.Resize(min, mat.NumCols(), kCopyData);
+            if (target.size() != min) target.resize(min);
+          } else {
+            KALDI_WARN << "Length mismatch! Targets " << target.size()
+                       << ", features " << feat_transf.NumRows() << ", " << key;
+            num_other_error++;
+            feature_reader.Next();
+            continue;
+          }
+        }
+#endif
 
           // checks ok, put the data in the buffers,
           keys[s] = key;

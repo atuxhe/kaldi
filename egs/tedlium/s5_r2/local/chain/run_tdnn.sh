@@ -3,10 +3,10 @@
 # This script requires that you have run the toplevel run.sh script in TEDLIUM up to stage 7.
 #
 # Results: (Run toplevel ./results.sh)
-%WER 12.5 | 507 17792 | 89.5 7.5 3.0 2.0 12.5 85.0 | -0.132 | exp/chain/tdnn/decode_dev/score_8_0.5/ctm.filt.filt.sys
-%WER 11.7 | 507 17792 | 90.4 6.8 2.8 2.0 11.7 81.5 | -0.230 | exp/chain/tdnn/decode_dev_rescore/score_8_0.0/ctm.filt.filt.sys
-%WER 11.5 | 1155 27512 | 90.2 7.2 2.6 1.7 11.5 77.6 | -0.073 | exp/chain/tdnn/decode_test/score_8_0.0/ctm.filt.filt.sys
-%WER 10.4 | 1155 27512 | 90.9 5.9 3.2 1.3 10.4 73.8 | -0.099 | exp/chain/tdnn/decode_test_rescore/score_9_0.0/ctm.filt.filt.sys
+#%WER 12.5 | 507 17792 | 89.5 7.5 3.0 2.0 12.5 85.0 | -0.132 | exp/chain/tdnn/decode_dev/score_8_0.5/ctm.filt.filt.sys
+#%WER 11.7 | 507 17792 | 90.4 6.8 2.8 2.0 11.7 81.5 | -0.230 | exp/chain/tdnn/decode_dev_rescore/score_8_0.0/ctm.filt.filt.sys
+#%WER 11.5 | 1155 27512 | 90.2 7.2 2.6 1.7 11.5 77.6 | -0.073 | exp/chain/tdnn/decode_test/score_8_0.0/ctm.filt.filt.sys
+#%WER 10.4 | 1155 27512 | 90.9 5.9 3.2 1.3 10.4 73.8 | -0.099 | exp/chain/tdnn/decode_test_rescore/score_9_0.0/ctm.filt.filt.sys
 
 
 set -uo pipefail

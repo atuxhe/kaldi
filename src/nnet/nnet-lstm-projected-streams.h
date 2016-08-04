@@ -54,7 +54,7 @@ class LstmProjectedStreams : public UpdatableComponent {
     nrecur_(output_dim),
     nstream_(0),
     clip_gradient_(0.0)
-    // , dropout_rate_(0.0)
+    , dropout_rate_(0.0)
   { }
 
   ~LstmProjectedStreams()
@@ -66,6 +66,7 @@ class LstmProjectedStreams : public UpdatableComponent {
   void InitData(std::istream &is) {
     // define options,
     float param_scale = 0.02;
+    float fgate_bias_init = 0.0;
     // parse the line from prototype,
     std::string token;
     while (is >> std::ws, !is.eof()) {
@@ -75,7 +76,8 @@ class LstmProjectedStreams : public UpdatableComponent {
       else if (token == "<LearnRateCoef>") ReadBasicType(is, false, &learn_rate_coef_);
       else if (token == "<BiasLearnRateCoef>") ReadBasicType(is, false, &bias_learn_rate_coef_);
       else if (token == "<ParamScale>") ReadBasicType(is, false, &param_scale);
-      // else if (token == "<DropoutRate>") ReadBasicType(is, false, &dropout_rate_);
+      else if (token == "<FgateBias>") ReadBasicType(is, false, &fgate_bias_init);
+      else if (token == "<DropoutRate>") ReadBasicType(is, false, &dropout_rate_);
       else KALDI_ERR << "Unknown token " << token << ", a typo in config?"
                      << " (CellDim|ClipGradient|LearnRateCoef|BiasLearnRateCoef|ParamScale)";
     }
@@ -99,6 +101,10 @@ class LstmProjectedStreams : public UpdatableComponent {
     RandUniform(0.0, 2.0 * param_scale, &peephole_i_c_);
     RandUniform(0.0, 2.0 * param_scale, &peephole_f_c_);
     RandUniform(0.0, 2.0 * param_scale, &peephole_o_c_);
+
+    if (fgate_bias_init != 0.0) {   // reset the bias of the forget gates
+       bias_.Range(2 * ncell_, ncell_).Set(fgate_bias_init);
+    }
 
     // init buffers for gradient,
     w_gifo_x_corr_.Resize(4*ncell_, input_dim_, kSetZero);
@@ -128,9 +134,9 @@ class LstmProjectedStreams : public UpdatableComponent {
           else if (token == "<ClipGradient>") ReadBasicType(is, binary, &clip_gradient_);
           else KALDI_ERR << "Unknown token: " << token;
           break;
-        // case 'D': ExpectToken(is, binary, "<DropoutRate>");
-        //   ReadBasicType(is, binary, &dropout_rate_);
-        //   break;
+        case 'D': ExpectToken(is, binary, "<DropoutRate>");
+          ReadBasicType(is, binary, &dropout_rate_);
+          break;
         case 'L': ExpectToken(is, binary, "<LearnRateCoef>");
           ReadBasicType(is, binary, &learn_rate_coef_);
           break;
@@ -171,8 +177,8 @@ class LstmProjectedStreams : public UpdatableComponent {
     WriteBasicType(os, binary, ncell_);
     WriteToken(os, binary, "<ClipGradient>");
     WriteBasicType(os, binary, clip_gradient_);
-    //WriteToken(os, binary, "<DropoutRate>");
-    //WriteBasicType(os, binary, dropout_rate_);
+    WriteToken(os, binary, "<DropoutRate>");
+    WriteBasicType(os, binary, dropout_rate_);
 
     WriteToken(os, binary, "<LearnRateCoef>");
     WriteBasicType(os, binary, learn_rate_coef_);
@@ -366,6 +372,12 @@ class LstmProjectedStreams : public UpdatableComponent {
     }
   }
 
+  void SetNumStream(int numStream) {
+    nstream_ = numStream;
+    prev_nnet_state_.Resize(nstream_, 7*ncell_ + 1*nrecur_, kSetZero);
+  }
+
+
   void PropagateFnc(const CuMatrixBase<BaseFloat> &in,
                     CuMatrixBase<BaseFloat> *out) {
     int DEBUG = 0;
@@ -413,6 +425,15 @@ class LstmProjectedStreams : public UpdatableComponent {
     //   YGIFO.RowRange(1*S,T*S).MulElements(dropout_mask_);
     // }
 
+    // LSTM dropout 
+    // Refer to Google paper 2016: 
+    // "Recurrent Dropout without Memory Loss"
+    if (dropout_rate_ > 0.0) {
+       dropout_mask_.Resize(S, ncell_, kUndefined);
+       dropout_mask_.SetRandUniform();   // [0,1]
+       dropout_mask_.Add(-dropout_rate_);  // [-dropout_rate, 1-dropout_rate_],
+       dropout_mask_.ApplyHeaviside();   // -tive -> 0.0, +tive -> 1.0
+    }
     // bias -> g, i, f, o
     YGIFO.RowRange(1*S, T*S).AddVecToRows(1.0, bias_);
 
@@ -444,6 +465,16 @@ class LstmProjectedStreams : public UpdatableComponent {
 
       // g tanh squashing
       y_g.Tanh(y_g);
+
+       
+      // LSTM dropout 
+      // Refer to Google paper 2016: 
+      // "Recurrent Dropout without Memory Loss"
+      if (dropout_rate_ > 0.0) {
+         y_g.MulElements(dropout_mask_);
+         y_g.Scale(1.0/dropout_rate_);
+      }
+
 
       // g -> c
       y_c.AddMatMatElements(1.0, y_g, y_i, 0.0);
@@ -596,6 +627,13 @@ class LstmProjectedStreams : public UpdatableComponent {
 
       // c -> g via input gate
       d_g.AddMatMatElements(1.0, d_c, y_i, 0.0);
+
+      // backward pass dropout
+      if (dropout_rate_ > 0.0) {
+         d_g.MulElements(dropout_mask_);
+         d_g.Scale(1.0/dropout_rate_);
+      }
+
       d_g.DiffTanh(y_g, d_g);
 
       // debug info
@@ -767,9 +805,10 @@ class LstmProjectedStreams : public UpdatableComponent {
   // gradient-clipping value,
   BaseFloat clip_gradient_;
 
-  // non-recurrent dropout
-  // BaseFloat dropout_rate_;
-  // CuMatrix<BaseFloat> dropout_mask_;
+  // recurrent dropout 
+  // refer to "Recurrent Dropout without Memory Loss"
+  BaseFloat dropout_rate_;
+  CuMatrix<BaseFloat> dropout_mask_;
 
   // feed-forward connections: from x to [g, i, f, o]
   CuMatrix<BaseFloat> w_gifo_x_;

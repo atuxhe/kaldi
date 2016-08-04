@@ -20,7 +20,7 @@ align_to_lats=false # optionally produce alignment in lattice format
  lats_decode_opts="--acoustic-scale=0.1 --beam=20 --lattice_beam=10"
  lats_graph_scales="--transition-scale=1.0 --self-loop-scale=0.1"
 
-use_gpu="no" # yes|no|optionaly
+use_gpu="yes" # yes|no|optionaly
 # End configuration options.
 
 [ $# -gt 0 ] && echo "$0 $@"  # Print the command line for logging

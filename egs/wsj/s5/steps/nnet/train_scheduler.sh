@@ -9,13 +9,14 @@
 
 # training options,
 learn_rate=0.008
-momentum=0
-l1_penalty=0
-l2_penalty=0
+momentum=0.0
+l1_penalty=0.0
+l2_penalty=0.0
 
 # data processing,
 train_tool="nnet-train-frmshuff"
-train_tool_opts="--minibatch-size=256 --randomizer-size=32768 --randomizer-seed=777"
+#train_tool_opts="--minibatch-size=256 --randomizer-size=32768 --randomizer-seed=777"
+train_tool_opts=
 feature_transform=
 
 # learn rate scheduling,
@@ -77,8 +78,8 @@ mlp_base=${mlp_init##*/}; mlp_base=${mlp_base%.*}
 log=$dir/log/iter00.initial.log; hostname>$log
 $train_tool --cross-validate=true --randomize=false --verbose=$verbose $train_tool_opts \
   ${feature_transform:+ --feature-transform=$feature_transform} \
-  ${frame_weights:+ "--frame-weights=$frame_weights"} \
-  ${utt_weights:+ "--utt-weights=$utt_weights"} \
+  ${frame_weights:+ --frame-weights=$frame_weights} \
+  ${utt_weights:+ --utt-weights=$utt_weights} \
   "$feats_cv" "$labels_cv" $mlp_best \
   2>> $log
 
@@ -104,8 +105,8 @@ for iter in $(seq -w $max_iters); do
     --learn-rate=$learn_rate --momentum=$momentum \
     --l1-penalty=$l1_penalty --l2-penalty=$l2_penalty \
     ${feature_transform:+ --feature-transform=$feature_transform} \
-    ${frame_weights:+ "--frame-weights=$frame_weights"} \
-    ${utt_weights:+ "--utt-weights=$utt_weights"} \
+    ${frame_weights:+ --frame-weights=$frame_weights} \
+    ${utt_weights:+ --utt-weights=$utt_weights} \
     "$feats_tr" "$labels_tr" $mlp_best $mlp_next \
     2>> $log || exit 1; 
 
