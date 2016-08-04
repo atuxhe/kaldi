@@ -441,6 +441,10 @@ else
       utils/nnet/make_blstm_proto.py $proto_opts \
         $num_fea $num_tgt >$nnet_proto
       ;; 
+    blclstm)
+      utils/nnet/make_blclstm_proto.py $proto_opts \
+        $num_fea $num_tgt >$nnet_proto
+      ;; 
     *) echo "Unknown : --network-type $network_type" && exit 1;
   esac
 

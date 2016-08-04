@@ -26,6 +26,7 @@
 #include "nnet/nnet-various.h"
 #include "nnet/nnet-lstm-projected-streams.h"
 #include "nnet/nnet-blstm-projected-streams.h"
+#include "nnet/nnet-blclstm-projected-streams.h"
 
 namespace kaldi {
 namespace nnet1 {
@@ -285,6 +286,10 @@ void Nnet::ResetLstmStreams(const std::vector<int32> &stream_reset_flag) {
     if (GetComponent(c).GetType() == Component::kLstmProjectedStreams) {
       LstmProjectedStreams& comp =
         dynamic_cast<LstmProjectedStreams&>(GetComponent(c));
+      comp.ResetLstmStreams(stream_reset_flag);
+    } else if (GetComponent(c).GetType() == Component::kBLCLstmProjectedStreams) {
+      BLCLstmProjectedStreams& comp =
+        dynamic_cast<BLCLstmProjectedStreams&>(GetComponent(c));
       comp.ResetLstmStreams(stream_reset_flag);
     }
   }

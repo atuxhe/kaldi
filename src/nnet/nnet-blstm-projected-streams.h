@@ -580,9 +580,10 @@ class BLstmProjectedStreams : public UpdatableComponent {
     int DEBUG = 0;
 
     int32 nstream_ = sequence_lengths_.size();
+    // if not set num_streams, set 1 stream
     if (nstream_ == 0) {
-        nstream_ = 1;
-        //sequence_lengths_.push_back(in.NumRows());
+      nstream_ = 1;
+      //sequence_lengths_.push_back(in.NumRows());
     }
     KALDI_ASSERT(in.NumRows() % nstream_ == 0);
     int32 T = in.NumRows() / nstream_;

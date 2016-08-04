@@ -36,13 +36,13 @@ int main(int argc, char *argv[]) {
   
   try {
     const char *usage =
-        "Perform one iteration of LSTM training by Stochastic Gradient Descent.\n"
+        "Perform one iteration of BLCLSTM training by Stochastic Gradient Descent.\n"
         "This version use pdf-posterior as targets, prepared typically by ali-to-post.\n"
         "The updates are done per-utterance, shuffling options are dummy for compatibility reason.\n"
         "\n"
-        "Usage: nnet-train-lstm-streams [options] <feature-rspecifier> <targets-rspecifier> <model-in> [<model-out>]\n"
+        "Usage: nnet-train-blclstm-streams [options] <feature-rspecifier> <targets-rspecifier> <model-in> [<model-out>]\n"
         "e.g.: \n"
-        " nnet-train-lstm-streams scp:feature.scp ark:posterior.ark nnet.init nnet.iter1\n";
+        " nnet-train-blclstm-streams scp:feature.scp ark:posterior.ark nnet.init nnet.iter1\n";
 
     ParseOptions po(usage);
 

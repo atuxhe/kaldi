@@ -429,7 +429,7 @@ class LstmProjectedStreams : public UpdatableComponent {
     // Refer to Google paper 2016: 
     // "Recurrent Dropout without Memory Loss"
     if (dropout_rate_ > 0.0) {
-       dropout_mask_.Resize(S, ncell_, kUndefined);
+       dropout_mask_.Resize(nstream_, ncell_, kUndefined);
        dropout_mask_.SetRandUniform();   // [0,1]
        dropout_mask_.Add(-dropout_rate_);  // [-dropout_rate, 1-dropout_rate_],
        dropout_mask_.ApplyHeaviside();   // -tive -> 0.0, +tive -> 1.0

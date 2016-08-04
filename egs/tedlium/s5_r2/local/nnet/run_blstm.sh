@@ -75,7 +75,7 @@ if [ $stage -le 1 ]; then
     steps/nnet/train.sh --network-type blstm --learn-rate 0.00004 --momentum 0.9 --shuffle-lists false \
       --feat-type plain --splice 0 \
       --proto-opts "--clip-gradient 5.0" \
-      --train-tool "nnet-train-blstm-streams --num-streams=16" \
+      --train-tool "nnet-train-blstm-streams --num-streams=8" \
     ${train}_tr90 ${train}_cv10 data/lang $ali $ali $dir || exit 1;
 
   # Decode (reuse HCLG graph)

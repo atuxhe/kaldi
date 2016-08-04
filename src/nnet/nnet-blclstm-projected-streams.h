@@ -592,6 +592,11 @@ class BLCLstmProjectedStreams : public UpdatableComponent {
     }
   }
 
+  void SetNumStream(int numStream) {
+    nstream_ = numStream;
+    prev_nnet_state_.Resize(nstream_, 7*ncell_ + 1*nrecur_, kSetZero);
+  }
+
   void PropagateFnc(const CuMatrixBase<BaseFloat> &in,
                     CuMatrixBase<BaseFloat> *out) {
     int DEBUG = 0;
