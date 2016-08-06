@@ -19,8 +19,9 @@
 
 #include <limits>
 
-#include "nnet/nnet-trnopts.h"
 #include "nnet/nnet-lstm-projected-streams.h"
+#include "nnet/nnet-blclstm-projected-streams.h"
+#include "nnet/nnet-trnopts.h"
 #include "nnet/nnet-nnet.h"
 #include "nnet/nnet-pdf-prior.h"
 #include "base/kaldi-common.h"
@@ -118,7 +119,9 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < nnet.NumComponents(); ++i) {
         if (Component::kLstmProjectedStreams == nnet.GetComponent(i).GetType()) {
            ((LstmProjectedStreams *) (&(nnet.GetComponent(i))))->SetNumStream(num_stream);
-        } 
+        } else if (Component::kBLCLstmProjectedStreams == nnet.GetComponent(i).GetType()) {
+           ((BLCLstmProjectedStreams *) (&(nnet.GetComponent(i))))->SetNumStream(num_stream);
+        }
     }
 
 
@@ -167,7 +170,7 @@ int main(int argc, char *argv[]) {
                 ;
             } else {
                 break;
-            }    
+            } 
         }
         if (cur_stream == 0) {
             continue;

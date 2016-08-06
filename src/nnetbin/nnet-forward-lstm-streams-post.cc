@@ -22,7 +22,6 @@
 #include "nnet/nnet-trnopts.h"
 #include "nnet/nnet-lstm-projected-streams.h"
 #include "nnet/nnet-nnet.h"
-#include "nnet/nnet-pdf-prior.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "base/timer.h"
@@ -42,16 +41,8 @@ int main(int argc, char *argv[]) {
 
     ParseOptions po(usage);
 
-    PdfPriorOptions prior_opts;
-    prior_opts.Register(&po);
-
     std::string feature_transform;
     po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
-
-    bool no_softmax = false;
-    po.Register("no-softmax", &no_softmax, "No softmax on MLP output (or remove it if found), the pre-softmax activations will be used as log-likelihoods, log-priors will be subtracted");
-    bool apply_log = false;
-    po.Register("apply-log", &apply_log, "Transform MLP output to logscale");
 
     std::string use_gpu="no";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA"); 
@@ -88,27 +79,6 @@ int main(int argc, char *argv[]) {
 
     Nnet nnet;
     nnet.Read(model_filename);
-    //optionally remove softmax
-    if (no_softmax && nnet.GetComponent(nnet.NumComponents()-1).GetType() ==
-        kaldi::nnet1::Component::kSoftmax) {
-      KALDI_LOG << "Removing softmax from the nnet " << model_filename;
-      nnet.RemoveComponent(nnet.NumComponents()-1);
-    }
-    //check for some non-sense option combinations
-    if (apply_log && no_softmax) {
-      KALDI_ERR << "Nonsense option combination : --apply-log=true and --no-softmax=true";
-    }
-    if (apply_log && nnet.GetComponent(nnet.NumComponents()-1).GetType() !=
-        kaldi::nnet1::Component::kSoftmax) {
-      KALDI_ERR << "Used --apply-log=true, but nnet " << model_filename 
-                << " does not have <softmax> as last component!";
-    }
-    
-    PdfPrior pdf_prior(prior_opts);
-    if (prior_opts.class_frame_counts != "" && (!no_softmax && !apply_log)) {
-      KALDI_ERR << "Option --class-frame-counts has to be used together with "
-                << "--no-softmax or --apply-log";
-    }
 
     // disable dropout
     nnet_transf.SetDropoutRetention(1.0);
@@ -205,16 +175,6 @@ int main(int argc, char *argv[]) {
         nnet.ResetLstmStreams(new_utt_flags);
         // forward pass
         nnet.Feedforward(feat_transf, &nnet_out);
-
-        // convert posteriors to log-posteriors
-        if (apply_log) {
-            nnet_out.ApplyLog();
-        }
-
-        // subtract log-priors from log-posteriors to get quasi-likelihoods
-        if (prior_opts.class_frame_counts != "" && (no_softmax || apply_log)) {
-            pdf_prior.SubtractOnLogpost(&nnet_out);
-        }
 
         //download from GPU
         nnet_out_host.Resize(nnet_out.NumRows(), nnet_out.NumCols());
