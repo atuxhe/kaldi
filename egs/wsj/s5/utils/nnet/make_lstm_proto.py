@@ -69,6 +69,7 @@ elif o.num_layers == 2:
 else:
     sys.stderr.write("make_lstm_proto.py ERROR: more than 2 layers of LSTM, not supported yet.\n")
     sys.exit(1)
+print "<Tanh> <InputDim> %d <OutputDim> %d" % (o.num_recurrent, o.num_recurrent)
 print "<AffineTransform> <InputDim> %d <OutputDim> %d <BiasMean> 0.0 <BiasRange> 0.0 <ParamStddev> %f" % \
     (o.num_recurrent, num_leaves, o.param_stddev_factor)
 print "<Softmax> <InputDim> %d <OutputDim> %d" % \
