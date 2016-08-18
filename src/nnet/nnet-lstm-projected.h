@@ -362,10 +362,10 @@ class LstmProjected : public MultistreamComponent {
     }
   }
 
-  void SetNumStream(int numStream) {
-    nstream_ = numStream;
-    prev_nnet_state_.Resize(nstream_, 7*ncell_ + 1*nrecur_, kSetZero);
-  }
+  //void SetNumStream(int numStream) {
+    //nstream_ = numStream;
+    //prev_nnet_state_.Resize(nstream_, 7*ncell_ + 1*nrecur_, kSetZero);
+  //}
 
 
   void PropagateFnc(const CuMatrixBase<BaseFloat> &in,
@@ -406,12 +406,12 @@ class LstmProjected : public MultistreamComponent {
     // LSTM dropout 
     // Refer to Google paper 2016: 
     // "Recurrent Dropout without Memory Loss"
-    if (dropout_rate_ > 0.0) {
-       dropout_mask_.Resize(nstream_, ncell_, kUndefined);
-       dropout_mask_.SetRandUniform();   // [0,1]
-       dropout_mask_.Add(-dropout_rate_);  // [-dropout_rate, 1-dropout_rate_],
-       dropout_mask_.ApplyHeaviside();   // -tive -> 0.0, +tive -> 1.0
-    }
+    //if (dropout_rate_ > 0.0) {
+    //   dropout_mask_.Resize(nstream_, ncell_, kUndefined);
+    //   dropout_mask_.SetRandUniform();   // [0,1]
+    //   dropout_mask_.Add(-dropout_rate_);  // [-dropout_rate, 1-dropout_rate_],
+    //   dropout_mask_.ApplyHeaviside();   // -tive -> 0.0, +tive -> 1.0
+    //}
     // bias -> g, i, f, o
     YGIFO.RowRange(1*S, T*S).AddVecToRows(1.0, bias_);
 
