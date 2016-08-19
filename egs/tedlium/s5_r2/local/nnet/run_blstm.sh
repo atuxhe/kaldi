@@ -11,11 +11,11 @@
 
 sort_by_len=true
 
-dev=data-fbankpitch/test
-train=data-fbankpitch/train
+#dev=data-fbankpitch/test
+#train=data-fbankpitch/train
 
-#dev=data-fmllr-tri3/test
-#train=data-fmllr-tri3/train
+dev=data-fmllr-tri3/test
+train=data-fmllr-tri3/train
 
 dev_original=data/test
 train_original=data/train
@@ -47,22 +47,6 @@ fi
 dir=exp/blstm4f
 mkdir -p $dir
 
-false &&
-{
-if $sort_by_len; then
-  feat-to-len scp:${train}_tr90/feats.scp ark,t:- | awk '{print $2}' > $dir/len.tmp || exit 1;
-  paste -d " " ${train}_tr90/feats.scp $dir/len.tmp | sort -k3 -n - | awk -v m=$min_len '{ if ($3 >= m) {print $1 " " $2} }' > $dir/train.scp || exit 1;
-  feat-to-len scp:${train}_cv10/feats.scp ark,t:- | awk '{print $2}' > $dir/len.tmp || exit 1;
-  paste -d " " ${train}_cv10/feats.scp $dir/len.tmp | sort -k3 -n - | awk '{print $1 " " $2}' > $dir/cv.scp || exit 1;
-  rm -f $dir/len.tmp
-else
-  cat ${train}_tr90/feats.scp | utils/shuffle_list.pl --srand ${seed:-777} > $dir/train.scp
-  cat ${train}_cv10/feats.scp | utils/shuffle_list.pl --srand ${seed:-777} > $dir/cv.scp
-fi
-cp $dir/train.scp ${train}_tr90/feats.scp
-cp $dir/cv.scp ${train}_cv10/feats.scp
-}
-
 #false &&
 {
 if [ $stage -le 1 ]; then
@@ -72,10 +56,12 @@ if [ $stage -le 1 ]; then
 
   # Train
   $cuda_cmd $dir/log/train_nnet.log \
-    steps/nnet/train.sh --network-type blstm --learn-rate 0.00004 --momentum 0.9 --shuffle-lists false \
+    steps/nnet/train.sh --network-type blstm --learn-rate 0.00004 --momentum 0.9 \
       --feat-type plain --splice 0 \
-      --proto-opts "--clip-gradient 5.0" \
-      --train-tool "nnet-train-blstm-streams --num-streams=8" \
+      --scheduler-opts "--halving-factor 0.5" \
+      --train-tool "nnet-train-multistream-perutt" \
+      --train-tool-opts "--num-streams=10 --max-frames=15000" \
+      --proto-opts "--cell-dim 320 --proj-dim 200 --num-layers 2" \
     ${train}_tr90 ${train}_cv10 data/lang $ali $ali $dir || exit 1;
 
   # Decode (reuse HCLG graph)
@@ -84,9 +70,9 @@ if [ $stage -le 1 ]; then
 fi
 }
 
-dir=exp/blstm4f
-steps/nnet/decode.sh --nj 8 --cmd "$decode_cmd" --config conf/decode_dnn.config --acwt 0.1 \
-    $gmm/graph $dev $dir/decode_test || exit 1;
+#dir=exp/blstm4f
+#steps/nnet/decode.sh --nj 8 --cmd "$decode_cmd" --config conf/decode_dnn.config --acwt 0.1 \
+#    $gmm/graph $dev $dir/decode_test || exit 1;
 
 # TODO : sequence training,
 

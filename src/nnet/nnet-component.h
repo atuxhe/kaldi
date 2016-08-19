@@ -55,6 +55,7 @@ class Component {
     kLstmProjected,
     kBlstmProjected,
     kRecurrentComponent,
+    kBLClstmProjected,
 
     kActivationFunction = 0x0200,
     kSoftmax,

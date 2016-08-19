@@ -42,6 +42,7 @@
 #include "nnet/nnet-lstm-projected.h"
 #include "nnet/nnet-blstm-projected.h"
 #include "nnet/nnet-recurrent.h"
+#include "nnet/nnet-blclstm-projected.h"
 
 #include "nnet/nnet-sentence-averaging-component.h"
 #include "nnet/nnet-frame-pooling-component.h"
@@ -83,7 +84,7 @@ const struct Component::key_value Component::kMarkerMap[] = {
   { Component::kFramePoolingComponent, "<FramePoolingComponent>" },
   { Component::kParallelComponent, "<ParallelComponent>" },
   { Component::kMultiBasisComponent, "<MultiBasisComponent>" },
-  //{ Component::kBLCLstmProjectedStreams,"<BLCLstmProjectedStreams>"},
+  { Component::kBLClstmProjected,"<BLClstmProjected>"},
 };
 
 
@@ -138,9 +139,9 @@ Component* Component::NewComponentOfType(ComponentType comp_type,
     case Component::kRecurrentComponent :
       ans = new RecurrentComponent(input_dim, output_dim);
       break;
-    //case Component::kBLCLstmProjectedStreams :
-    //  ans = new BLCLstmProjectedStreams(input_dim, output_dim);
-    //  break;
+    case Component::kBLClstmProjected :
+      ans = new BLClstmProjected(input_dim, output_dim);
+      break;
     case Component::kSoftmax :
       ans = new Softmax(input_dim, output_dim);
       break;

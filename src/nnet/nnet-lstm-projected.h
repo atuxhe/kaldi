@@ -687,21 +687,21 @@ class LstmProjected : public MultistreamComponent {
               const CuMatrixBase<BaseFloat> &diff) {
 
     // apply the gradient clipping,
-    if (clip_gradient_ > 0.0) {
-      w_gifo_x_corr_.ApplyFloor(-clip_gradient_);
-      w_gifo_x_corr_.ApplyCeiling(clip_gradient_);
-      w_gifo_r_corr_.ApplyFloor(-clip_gradient_);
-      w_gifo_r_corr_.ApplyCeiling(clip_gradient_);
-      bias_corr_.ApplyFloor(-clip_gradient_);
-      bias_corr_.ApplyCeiling(clip_gradient_);
-      w_r_m_corr_.ApplyFloor(-clip_gradient_);
-      w_r_m_corr_.ApplyCeiling(clip_gradient_);
-      peephole_i_c_corr_.ApplyFloor(-clip_gradient_);
-      peephole_i_c_corr_.ApplyCeiling(clip_gradient_);
-      peephole_f_c_corr_.ApplyFloor(-clip_gradient_);
-      peephole_f_c_corr_.ApplyCeiling(clip_gradient_);
-      peephole_o_c_corr_.ApplyFloor(-clip_gradient_);
-      peephole_o_c_corr_.ApplyCeiling(clip_gradient_);
+    if (grad_clip_ > 0.0) {
+      w_gifo_x_corr_.ApplyFloor(-grad_clip_);
+      w_gifo_x_corr_.ApplyCeiling(grad_clip_);
+      w_gifo_r_corr_.ApplyFloor(-grad_clip_);
+      w_gifo_r_corr_.ApplyCeiling(grad_clip_);
+      bias_corr_.ApplyFloor(-grad_clip_);
+      bias_corr_.ApplyCeiling(grad_clip_);
+      w_r_m_corr_.ApplyFloor(-grad_clip_);
+      w_r_m_corr_.ApplyCeiling(grad_clip_);
+      peephole_i_c_corr_.ApplyFloor(-grad_clip_);
+      peephole_i_c_corr_.ApplyCeiling(grad_clip_);
+      peephole_f_c_corr_.ApplyFloor(-grad_clip_);
+      peephole_f_c_corr_.ApplyCeiling(grad_clip_);
+      peephole_o_c_corr_.ApplyFloor(-grad_clip_);
+      peephole_o_c_corr_.ApplyCeiling(grad_clip_);
     }
 
     const BaseFloat lr  = opts_.learn_rate;
@@ -729,9 +729,6 @@ class LstmProjected : public MultistreamComponent {
 
   // buffer for transfering state across batches,
   CuMatrix<BaseFloat> prev_nnet_state_;
-
-  // gradient-clipping value,
-  BaseFloat clip_gradient_;
 
   // recurrent dropout 
   // refer to "Recurrent Dropout without Memory Loss"

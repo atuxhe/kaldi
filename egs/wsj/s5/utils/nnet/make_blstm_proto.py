@@ -33,17 +33,17 @@ parser.add_option('--proj-dim', dest='proj_dim', type='int', default=400,
 parser.add_option('--num-layers', dest='num_layers', type='int', default=2,
                    help='Number of BLSTM layers [default: %default]');
 # Optional (default == 'None'),
-parser.add_option('--lstm-param-range', dest='lstm_param_range', type='float',
+parser.add_option('--lstm-param-range', dest='lstm_param_range', type='float', default=0.02,
                    help='Range of initial BLSTM parameters [default: %default]');
-parser.add_option('--param-stddev', dest='param_stddev', type='float',
+parser.add_option('--param-stddev', dest='param_stddev', type='float', default=0.01,
                    help='Standard deviation for initial weights of Softmax layer [default: %default]');
-parser.add_option('--cell-clip', dest='cell_clip', type='float',
+parser.add_option('--cell-clip', dest='cell_clip', type='float', default=50.0,
                    help='Clipping cell values during propagation (per-frame) [default: %default]');
-parser.add_option('--diff-clip', dest='diff_clip', type='float',
+parser.add_option('--diff-clip', dest='diff_clip', type='float', default=10.0,
                    help='Clipping partial-derivatives during BPTT (per-frame) [default: %default]');
 parser.add_option('--cell-diff-clip', dest='cell_diff_clip', type='float',
                    help='Clipping partial-derivatives of "cells" during BPTT (per-frame, those accumulated by CEC) [default: %default]');
-parser.add_option('--grad-clip', dest='grad_clip', type='float',
+parser.add_option('--grad-clip', dest='grad_clip', type='float', default=5.0,
                    help='Clipping the accumulated gradients (per-updates) [default: %default]');
 #
 
@@ -63,14 +63,14 @@ if len(args) != 2 :
 #</NnetProto>
 
 lstm_extra_opts=""
-if None != o.lstm_param_range: lstm_extra_opts += "<ParamRange> %f "   % o.lstm_param_range
-if None != o.cell_clip:        lstm_extra_opts += "<CellClip> %f "     % o.cell_clip
-if None != o.diff_clip:        lstm_extra_opts += "<DiffClip> %f "     % o.diff_clip
-if None != o.cell_diff_clip:   lstm_extra_opts += "<CellDiffClip> %f " % o.cell_diff_clip
-if None != o.grad_clip:        lstm_extra_opts += "<GradClip> %f "     % o.grad_clip
+if None != o.lstm_param_range: lstm_extra_opts += " <ParamRange> %f"   % o.lstm_param_range
+if None != o.cell_clip:        lstm_extra_opts += " <CellClip> %f"     % o.cell_clip
+if None != o.diff_clip:        lstm_extra_opts += " <DiffClip> %f"     % o.diff_clip
+if None != o.cell_diff_clip:   lstm_extra_opts += " <CellDiffClip> %f" % o.cell_diff_clip
+if None != o.grad_clip:        lstm_extra_opts += " <GradClip> %f"     % o.grad_clip
 
 softmax_affine_opts=""
-if None != o.param_stddev:     softmax_affine_opts += "<ParamStddev> %f " % o.param_stddev
+if None != o.param_stddev:     softmax_affine_opts += " <ParamStddev> %f" % o.param_stddev
 
 # The BLSTM layers,
 print "<BlstmProjected> <InputDim> %d <OutputDim> %d <CellDim> %s" % (feat_dim, 2*o.proj_dim, o.cell_dim) + lstm_extra_opts

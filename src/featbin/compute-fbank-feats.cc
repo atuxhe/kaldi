@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     ParseOptions po(usage);
     FbankOptions fbank_opts;
     bool subtract_mean = false;
+    bool do_pcen = false;
     BaseFloat vtln_warp = 1.0;
     std::string vtln_map_rspecifier;
     std::string utt2spk_rspecifier;
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]) {
     po.Register("utt2spk", &utt2spk_rspecifier, "Utterance to speaker-id map (if doing VTLN and you have warps per speaker)");
     po.Register("channel", &channel, "Channel to extract (-1 -> expect mono, 0 -> left, 1 -> right)");
     po.Register("min-duration", &min_duration, "Minimum duration of segments to process (in seconds).");
+    po.Register("do-pcen", &do_pcen, "do per-channel energy normalization");
 
     // OPTION PARSING ..........................................................
     //
@@ -154,6 +156,35 @@ int main(int argc, char *argv[]) {
         for (int32 i = 0; i < features.NumRows(); i++)
           features.Row(i).AddVec(-1.0, mean);
       }
+      if (do_pcen) {//do PCEN(Per-channel Energy Normalization)
+        Vector<BaseFloat> M(features.NumCols());
+        Vector<BaseFloat> Temp(features.NumCols());
+
+        BaseFloat alpha = 0.98;
+        BaseFloat delta = 2.0;
+        BaseFloat gama  = 0.5;
+        BaseFloat ss = 0.025;
+        BaseFloat eps = 0.0001;
+
+        M.SetZero();
+        Temp.SetZero();
+        
+        for (int32 i= 0; i < features.NumRows(); i++) {
+            M.Scale(1.0-ss);
+            M.AddVec(ss, features.Row(i));
+
+            Temp.CopyFromVec(M);
+            Temp.Add(eps);
+            Temp.ApplyPow((-1.0) * alpha);
+            Temp.MulElements(features.Row(i));
+            Temp.Add(delta);
+            Temp.ApplyPow(gama);
+            Temp.Add(-1.414);
+
+            features.Row(i).CopyFromVec(Temp);
+        } 
+      }
+      
       if (output_format == "kaldi") {
         kaldi_writer.Write(utt, features);
       } else {
