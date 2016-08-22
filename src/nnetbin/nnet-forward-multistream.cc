@@ -142,11 +142,15 @@ int main(int argc, char *argv[]) {
     int32 max_len = 0;
     int32 cur_stream = num_stream;
 
+    int32 cur_batch_size = batch_size;
+
     while (cur_stream != 0 && cur_stream == num_stream) {
         // loop over all streams, check if any stream reaches the end of its utterance,
         // if any, feed the exhausted stream with a new utterance, update book-keeping infos
         max_len = 0;
         cur_stream = 0;
+        cur_batch_size = batch_size;
+
         for (int s = 0; s < num_stream; s++) {
             // else, this stream exhausted, need new utterance
             if (!feature_reader.Done()) {
@@ -184,13 +188,17 @@ int main(int argc, char *argv[]) {
 
         nnet_out.Resize(max_len * num_stream, nnet.OutputDim());         
         // online decoding
-        
+
+        if (cur_batch_size == 0) {
+            cur_batch_size = max_len;
+        }
+ 
         CuMatrix<BaseFloat> nnet_out_batch;
         int nframes = 0;
-        feat.Resize(batch_size * num_stream, feat_dim);
-        while ((nframes + batch_size) <= max_len) {
+        feat.Resize(cur_batch_size * num_stream, feat_dim);
+        while ((nframes + cur_batch_size) <= max_len) {
             // fill a multi-stream bptt batch
-            for (int t = 0; t < batch_size; t++) {
+            for (int t = 0; t < cur_batch_size; t++) {
                 for (int s = 0; s < num_stream; s++) {
                     // feat shifting & padding
                     if (curt[s] < lent[s]) {
@@ -209,14 +217,14 @@ int main(int argc, char *argv[]) {
             nnet.Feedforward(feat_transf, &nnet_out_batch);
 
             // copy to output
-            nnet_out.RowRange(nframes*num_stream, batch_size * num_stream).CopyFromMat(nnet_out_batch);
+            nnet_out.RowRange(nframes*num_stream, cur_batch_size * num_stream).CopyFromMat(nnet_out_batch);
 
-            nframes += batch_size;
+            nframes += cur_batch_size;
         }
 
-        KALDI_LOG << "nframes = " << nframes <<",batch_size = "<< batch_size  << ",max_len = " << max_len;
+        KALDI_LOG << "nframes = " << nframes <<",batch_size = "<< cur_batch_size  << ",max_len = " << max_len;
  
-        if ((nframes < max_len) && ((nframes + batch_size) > max_len)) {
+        if ((nframes < max_len) && ((nframes + cur_batch_size) > max_len)) {
             int remainframes = max_len - nframes;
             feat.Resize(remainframes * num_stream, feat_dim);
             // fill a multi-stream bptt batch

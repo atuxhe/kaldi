@@ -19,11 +19,11 @@
 
 #include <limits>
 
-#include "nnet/nnet-lstm-projected-streams.h"
-#include "nnet/nnet-blclstm-projected-streams.h"
+#include "nnet/nnet-lstm-projected.h"
+#include "nnet/nnet-blstm-projected.h"
+#include "nnet/nnet-blclstm-projected.h"
 #include "nnet/nnet-trnopts.h"
 #include "nnet/nnet-nnet.h"
-#include "nnet/nnet-pdf-prior.h"
 #include "base/kaldi-common.h"
 #include "util/common-utils.h"
 #include "base/timer.h"
@@ -35,32 +35,25 @@ int main(int argc, char *argv[]) {
   using namespace kaldi::nnet1;
   try {
     const char *usage =
-        "Perform forward pass through LSTM Recurrent Neural Network by multi-streams to parallel.\n"
+        "Perform forward pass through LSTM and BLCLSTM Recurrent Neural Network by multi-streams to parallel.\n"
         "\n"
-        "Usage:  nnet-forward-lstm-stream [options] <model-in> <feature-rspecifier> <feature-wspecifier>\n"
+        "Usage:  nnet-forward-multistream-post [options] <model-in> <feature-rspecifier> <feature-wspecifier>\n"
         "e.g.: \n"
-        " nnet-forward-lstm-stream nnet ark:features.ark ark:mlpoutput.ark\n";
+        " nnet-forward-multistream-post nnet ark:features.ark ark:mlpoutposter.ark\n";
 
     ParseOptions po(usage);
-
-    PdfPriorOptions prior_opts;
-    prior_opts.Register(&po);
 
     std::string feature_transform;
     po.Register("feature-transform", &feature_transform, "Feature transform in front of main network (in nnet format)");
 
-    bool no_softmax = false;
-    po.Register("no-softmax", &no_softmax, "No softmax on MLP output (or remove it if found), the pre-softmax activations will be used as log-likelihoods, log-priors will be subtracted");
-    bool apply_log = false;
-    po.Register("apply-log", &apply_log, "Transform MLP output to logscale");
-
     std::string use_gpu="no";
     po.Register("use-gpu", &use_gpu, "yes|no|optional, only has effect if compiled with CUDA"); 
 
-    int32 time_shift = 0;
-    po.Register("time-shift", &time_shift, "LSTM : repeat last input frame N-times, discrad N initial output frames."); 
-    int num_stream=4;
-    po.Register("num_stream", &num_stream, "if set the number of streams to parallel like LSTM RNN"); 
+    int32 batch_size = 20;
+    po.Register("batch-size", &batch_size, "low latency Bidirectional LSTM batch size"); 
+
+    int num_stream=8;
+    po.Register("num-stream", &num_stream, "if set the number of streams to parallel like LSTM RNN"); 
     
     po.Read(argc, argv);
 
@@ -71,7 +64,8 @@ int main(int argc, char *argv[]) {
 
     std::string model_filename = po.GetArg(1),
         feature_rspecifier = po.GetArg(2),
-        feature_wspecifier = po.GetArg(3);
+        posteriors_wspecifier = po.GetArg(3);
+        //feature_wspecifier = po.GetArg(3);
         
     using namespace kaldi;
     using namespace kaldi::nnet1;
@@ -89,46 +83,21 @@ int main(int argc, char *argv[]) {
 
     Nnet nnet;
     nnet.Read(model_filename);
-    //optionally remove softmax
-    if (no_softmax && nnet.GetComponent(nnet.NumComponents()-1).GetType() ==
+
+    if (nnet.GetComponent(nnet.NumComponents()-1).GetType() !=
         kaldi::nnet1::Component::kSoftmax) {
-      KALDI_LOG << "Removing softmax from the nnet " << model_filename;
-      nnet.RemoveComponent(nnet.NumComponents()-1);
-    }
-    //check for some non-sense option combinations
-    if (apply_log && no_softmax) {
-      KALDI_ERR << "Nonsense option combination : --apply-log=true and --no-softmax=true";
-    }
-    if (apply_log && nnet.GetComponent(nnet.NumComponents()-1).GetType() !=
-        kaldi::nnet1::Component::kSoftmax) {
-      KALDI_ERR << "Used --apply-log=true, but nnet " << model_filename 
-                << " does not have <softmax> as last component!";
+      KALDI_ERR << model_filename << " does not have <softmax> as last component!";
     }
     
-    PdfPrior pdf_prior(prior_opts);
-    if (prior_opts.class_frame_counts != "" && (!no_softmax && !apply_log)) {
-      KALDI_ERR << "Option --class-frame-counts has to be used together with "
-                << "--no-softmax or --apply-log";
-    }
-
     // disable dropout
     nnet_transf.SetDropoutRetention(1.0);
     nnet.SetDropoutRetention(1.0);
 
-    // set the number of streams
-    for (int i = 0; i < nnet.NumComponents(); ++i) {
-        if (Component::kLstmProjectedStreams == nnet.GetComponent(i).GetType()) {
-           ((LstmProjectedStreams *) (&(nnet.GetComponent(i))))->SetNumStream(num_stream);
-        } else if (Component::kBLCLstmProjectedStreams == nnet.GetComponent(i).GetType()) {
-           ((BLCLstmProjectedStreams *) (&(nnet.GetComponent(i))))->SetNumStream(num_stream);
-        }
-    }
-
-
     kaldi::int64 tot_t = 0;
 
     SequentialBaseFloatMatrixReader feature_reader(feature_rspecifier);
-    BaseFloatMatrixWriter feature_writer(feature_wspecifier);
+    PosteriorWriter posterior_writer(posteriors_wspecifier);
+    //BaseFloatMatrixWriter feature_writer(feature_wspecifier);
 
     //  book-keeping for multi-streams
     std::vector<std::string> keys(num_stream);
@@ -147,13 +116,13 @@ int main(int argc, char *argv[]) {
     double time_now = 0;
     int32 num_done = 0;
 
-    int32 batch_size = 0;
+    int32 max_len = 0;
     int32 cur_stream = num_stream;
 
     while (cur_stream != 0 && cur_stream == num_stream) {
         // loop over all streams, check if any stream reaches the end of its utterance,
         // if any, feed the exhausted stream with a new utterance, update book-keeping infos
-        batch_size = 0;
+        max_len = 0;
         cur_stream = 0;
         for (int s = 0; s < num_stream; s++) {
             // else, this stream exhausted, need new utterance
@@ -164,13 +133,13 @@ int main(int argc, char *argv[]) {
                 lent[s] = feats[s].NumRows();
                 feature_reader.Next();
                 ++cur_stream;
-                if (batch_size < lent[s]) {
-                    batch_size = lent[s];
+                if (max_len < lent[s]) {
+                    max_len = lent[s];
                 }
                 ;
             } else {
                 break;
-            } 
+            }
         }
         if (cur_stream == 0) {
             continue;
@@ -183,40 +152,70 @@ int main(int argc, char *argv[]) {
            }
         }
 
-        feat.Resize(batch_size * num_stream, feat_dim);
-        // fill a multi-stream bptt batch
-        for (int t = 0; t < batch_size; t++) {
-            for (int s = 0; s < num_stream; s++) {
-                // feat shifting & padding
-                if (curt[s] < lent[s]) {
-                    feat.Row(t * num_stream + s).CopyFromVec(feats[s].Row(curt[s]));
-                } else {
-                    feat.Row(t * num_stream + s).CopyFromVec(feats[s].Row(lent[s]-1));
-                }
-                curt[s]++;
-            }
-        }
+        nnet.SetSeqLengths(lent);
 
         for (int s = 0; s < num_stream; ++s) {
             new_utt_flags[s] = 1;
         }
+        nnet.ResetStreams(new_utt_flags);
 
+        nnet_out.Resize(max_len * num_stream, nnet.OutputDim());         
+        // online decoding
+        
+        CuMatrix<BaseFloat> nnet_out_batch;
+        int nframes = 0;
+        feat.Resize(batch_size * num_stream, feat_dim);
+        while ((nframes + batch_size) <= max_len) {
+            // fill a multi-stream bptt batch
+            for (int t = 0; t < batch_size; t++) {
+                for (int s = 0; s < num_stream; s++) {
+                    // feat shifting & padding
+                    if (curt[s] < lent[s]) {
+                        feat.Row(t * num_stream + s).CopyFromVec(feats[s].Row(curt[s]));
+                    } else {
+                        feat.Row(t * num_stream + s).CopyFromVec(feats[s].Row(lent[s]-1));
+                    }
+                    curt[s]++;
+                }
+            }
 
-        // apply optional feature transform
-        nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &feat_transf);
+            // apply optional feature transform
+            nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &feat_transf);
 
-        nnet.ResetLstmStreams(new_utt_flags);
-        // forward pass
-        nnet.Feedforward(feat_transf, &nnet_out);
+            // forward pass
+            nnet.Feedforward(feat_transf, &nnet_out_batch);
 
-        // convert posteriors to log-posteriors
-        if (apply_log) {
-            nnet_out.ApplyLog();
+            // copy to output
+            nnet_out.RowRange(nframes*num_stream, batch_size * num_stream).CopyFromMat(nnet_out_batch);
+
+            nframes += batch_size;
         }
 
-        // subtract log-priors from log-posteriors to get quasi-likelihoods
-        if (prior_opts.class_frame_counts != "" && (no_softmax || apply_log)) {
-            pdf_prior.SubtractOnLogpost(&nnet_out);
+        KALDI_LOG << "nframes = " << nframes <<",batch_size = "<< batch_size  << ",max_len = " << max_len;
+ 
+        if ((nframes < max_len) && ((nframes + batch_size) > max_len)) {
+            int remainframes = max_len - nframes;
+            feat.Resize(remainframes * num_stream, feat_dim);
+            // fill a multi-stream bptt batch
+            for (int t = 0; t < remainframes; t++) {
+                for (int s = 0; s < num_stream; s++) {
+                    // feat shifting & padding
+                    if (curt[s] < lent[s]) {
+                        feat.Row(t * num_stream + s).CopyFromVec(feats[s].Row(curt[s]));
+                    } else {
+                        feat.Row(t * num_stream + s).CopyFromVec(feats[s].Row(lent[s]-1));
+                    }
+                    curt[s]++;
+                }
+            }
+            // apply optional feature transform
+            nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat), &feat_transf);
+
+            // forward pass
+            nnet.Feedforward(feat_transf, &nnet_out_batch);
+          
+            // copy to output
+            nnet_out.RowRange(nframes*num_stream, remainframes*num_stream).CopyFromMat(nnet_out_batch);
         }
 
         //download from GPU
@@ -229,7 +228,6 @@ int main(int argc, char *argv[]) {
             nnet_out_host_sub.Resize(lent[s],nnet_out_host.NumCols());
             for (int t = 0; t < lent[s]; ++t) {
                 nnet_out_host_sub.Row(t).CopyFromVec(nnet_out_host.Row(t * num_stream + s));
-                //nnet_out_host_sub.Row(t).CopyFromVec(nnet_out_host.Row(batch_size * s + t));
             }
 #ifdef DEBUG
             //check for NaN/inf
@@ -243,22 +241,17 @@ int main(int argc, char *argv[]) {
               }
             }
 #endif
-            if (time_shift > 0) {
-                int32 src, dst;
-                int32 num_frames = nnet_out_host_sub.NumRows();
-
-                for (dst = 0; dst < num_frames - 1; dst++) {
-                    src = dst + time_shift;
-                    src = (src < 0) ? 0 : src;
-                    src = (src > num_frames-1) ? (num_frames-1) : src;
-                    nnet_out_host_sub.Row(dst).CopyFromVec(nnet_out_host_sub.Row(src));
-                }
-            }
-
             // write
             //KALDI_LOG << keys[s] << "," << lent[s] << "," << nnet_out_host_sub.NumRows() << "," << nnet_out_host_sub.NumCols();
             //KALDI_LOG << nnet_out_host_sub;
-            feature_writer.Write(keys[s], nnet_out_host_sub);
+            Posterior post;
+      
+            MatrixToPosterior(nnet_out_host_sub, 50, 0.001, &post);
+      
+            posterior_writer.Write(keys[s], post);
+
+            // write
+            //feature_writer.Write(keys[s], nnet_out_host_sub);
             tot_t += lent[s];
         }
 
