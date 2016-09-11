@@ -48,6 +48,7 @@
 #include "nnet/nnet-frame-pooling-component.h"
 #include "nnet/nnet-parallel-component.h"
 #include "nnet/nnet-multibasis-component.h"
+#include "nnet/nnet-parametric-relu.h"
 
 namespace kaldi {
 namespace nnet1 {
@@ -67,6 +68,7 @@ const struct Component::key_value Component::kMarkerMap[] = {
   { Component::kBlockSoftmax, "<BlockSoftmax>" },
   { Component::kSigmoid, "<Sigmoid>" },
   { Component::kTanh, "<Tanh>" },
+  { Component::kParametricRelu,"<ParametricRelu>" },
   { Component::kDropout, "<Dropout>" },
   { Component::kLengthNormComponent, "<LengthNormComponent>" },
   { Component::kRbm, "<Rbm>" },
@@ -156,6 +158,9 @@ Component* Component::NewComponentOfType(ComponentType comp_type,
       break;
     case Component::kTanh :
       ans = new Tanh(input_dim, output_dim);
+      break;
+    case Component::kParametricRelu :
+      ans = new ParametricRelu(input_dim, output_dim);
       break;
     case Component::kDropout :
       ans = new Dropout(input_dim, output_dim);
