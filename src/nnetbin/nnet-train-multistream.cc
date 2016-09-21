@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
                        &num_no_tgt_mat, &num_other_error)) {
 
             // input transform may contain splicing,
-            nnet_transf.Feedforward(CuMatrix<BaseFloat>(feats), &feats_transf);
+            //nnet_transf.Feedforward(CuMatrix<BaseFloat>(feats), &feats_transf);
 
             /* Here we could do the 'targets_delay', BUT...
              * It is better to do it by a <Splice> component!
@@ -252,7 +252,9 @@ int main(int argc, char *argv[]) {
              */
 
             // store,
-            feats_utt[s] = Matrix<BaseFloat>(feats_transf);
+            //feats_utt[s] = Matrix<BaseFloat>(feats_transf);
+            //feats_utt[s] = feats_transf;
+            feats_utt[s] = feats;
             labels_utt[s] = targets;
             weights_utt[s] = weights;
             new_utt_flags[s] = 1;
@@ -279,7 +281,7 @@ int main(int argc, char *argv[]) {
         int32 n_streams = num_streams;
 
         // Create the final feature matrix with 'interleaved feature-lines',
-        feat_mat_host.Resize(n_streams * batch_size, nnet.InputDim(), kSetZero);
+        feat_mat_host.Resize(n_streams * batch_size, nnet.InputDim(), kUndefined);
         target_host.resize(n_streams * batch_size);
         weight_host.Resize(n_streams * batch_size, kSetZero);
         frame_num_utt.resize(n_streams, 0);
@@ -354,7 +356,10 @@ int main(int argc, char *argv[]) {
       nnet.ResetStreams(new_utt_flags);
 
       // forward pass,
-      nnet.Propagate(CuMatrix<BaseFloat>(feat_mat_host), &nnet_out);
+      nnet_transf.Feedforward(CuMatrix<BaseFloat>(feat_mat_host), &feats_transf);
+
+      //nnet.Propagate(feat_mat_host, &nnet_out);
+      nnet.Propagate(feats_transf, &nnet_out);
 
       // evaluate objective function we've chosen,
       if (objective_function == "xent") {

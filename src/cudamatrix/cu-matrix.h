@@ -661,7 +661,7 @@ class CuMatrix: public CuMatrixBase<Real> {
 
   /// Constructor with memory initialisation
   CuMatrix(MatrixIndexT rows, MatrixIndexT cols,
-           MatrixResizeType resize_type = kSetZero,
+           MatrixResizeType resize_type = kUndefined,
            MatrixStrideType stride_type = kDefaultStride) {
     Resize(rows, cols, resize_type, stride_type);
   }
@@ -722,7 +722,7 @@ class CuMatrix: public CuMatrixBase<Real> {
 
   /// Allocate the memory
   void Resize(MatrixIndexT rows, MatrixIndexT cols,
-              MatrixResizeType resize_type = kSetZero,
+              MatrixResizeType resize_type = kUndefined,
               MatrixStrideType stride_type = kDefaultStride);
 
   void Swap(Matrix<Real> *mat);

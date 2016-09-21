@@ -613,10 +613,10 @@ class LstmProjected : public MultistreamComponent {
       d_g.AddMatMatElements(1.0, d_c, y_i, 0.0);
 
       // backward pass dropout
-      if (dropout_rate_ > 0.0) {
-         d_g.MulElements(dropout_mask_);
-         d_g.Scale(1.0/dropout_rate_);
-      }
+      //if (dropout_rate_ > 0.0) {
+      //   d_g.MulElements(dropout_mask_);
+      //   d_g.Scale(1.0/dropout_rate_);
+      //}
 
       d_g.DiffTanh(y_g, d_g);
 
