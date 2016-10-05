@@ -35,7 +35,7 @@ class AffineTransform : public UpdatableComponent {
   AffineTransform(int32 dim_in, int32 dim_out):
     UpdatableComponent(dim_in, dim_out),
     linearity_(dim_out, dim_in), bias_(dim_out),
-    linearity_corr_(dim_out, dim_in), bias_corr_(dim_out),
+    linearity_corr_(dim_out, dim_in, kSetZero), bias_corr_(dim_out, kSetZero),
     max_norm_(0.0)
   { }
   ~AffineTransform()

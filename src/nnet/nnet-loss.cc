@@ -74,10 +74,10 @@ void Xent::Eval(const VectorBase<BaseFloat> &frame_weights,
   // buffer initialization,
   int32 num_classes = targets.NumCols();
   if (frames_.Dim() == 0) {
-    frames_.Resize(num_classes);
-    xentropy_.Resize(num_classes);
-    entropy_.Resize(num_classes);
-    correct_.Resize(num_classes);
+    frames_.Resize(num_classes, kSetZero);
+    xentropy_.Resize(num_classes, kSetZero);
+    entropy_.Resize(num_classes, kSetZero);
+    correct_.Resize(num_classes, kSetZero);
   }
 
   // get frame_weights to GPU,
@@ -87,7 +87,7 @@ void Xent::Eval(const VectorBase<BaseFloat> &frame_weights,
   // This happens in multi-lingual training when the frame
   // has target class in the softmax of another language.
   // We 'switch-off' such frames by masking the 'frame_weights_',
-  target_sum_.Resize(targets.NumRows());
+  target_sum_.Resize(targets.NumRows(), kSetZero);
   target_sum_.AddColSumMat(1.0, targets, 0.0);
   frame_weights_.MulElements(target_sum_);
 

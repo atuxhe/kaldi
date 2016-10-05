@@ -389,7 +389,7 @@ class Vector: public VectorBase<Real> {
   /// Constructor with specific size.  Sets to all-zero by default
   /// if set_zero == false, memory contents are undefined.
   explicit Vector(const MatrixIndexT s,
-                  MatrixResizeType resize_type = kSetZero)
+                  MatrixResizeType resize_type = kUndefined)
       : VectorBase<Real>() {  Resize(s, resize_type);  }
 
   /// Copy constructor from CUDA vector
@@ -442,7 +442,7 @@ class Vector: public VectorBase<Real> {
   ///   -if kCopyData, the new data will be the same as the old data in any
   ///      shared positions, and zero elsewhere.
   /// This function takes time proportional to the number of data elements.
-  void Resize(MatrixIndexT length, MatrixResizeType resize_type = kSetZero);
+  void Resize(MatrixIndexT length, MatrixResizeType resize_type = kUndefined);
 
   /// Remove one element and shifts later elements down.
   void RemoveElement(MatrixIndexT i);

@@ -403,6 +403,13 @@ int main(int argc, char *argv[]) {
           << "processed " << total_frames / time_now << " frames per sec.";
       }
 
+      N=100000;
+      if (tmp_done / N != num_done / N) {
+        if (!crossvalidate) {
+          nnet.Write(target_model_filename, binary);
+        }
+      }
+
       // monitor the NN training (--verbose=2),
       int32 F = 25000;
       if (GetVerboseLevel() >= 3) {

@@ -746,7 +746,7 @@ class Matrix : public MatrixBase<Real> {
 
   /// Basic constructor.
   Matrix(const MatrixIndexT r, const MatrixIndexT c,
-         MatrixResizeType resize_type = kSetZero,
+         MatrixResizeType resize_type = kUndefined,
          MatrixStrideType stride_type = kDefaultStride):
       MatrixBase<Real>() { Resize(r, c, resize_type, stride_type); }
 
@@ -828,7 +828,7 @@ class Matrix : public MatrixBase<Real> {
   /// This function takes time proportional to the number of data elements.
   void Resize(const MatrixIndexT r,
               const MatrixIndexT c,
-              MatrixResizeType resize_type = kSetZero,
+              MatrixResizeType resize_type = kUndefined,
               MatrixStrideType stride_type = kDefaultStride);
 
   /// Assignment operator that takes MatrixBase.
