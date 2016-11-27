@@ -87,6 +87,7 @@ const struct Component::key_value Component::kMarkerMap[] = {
   { Component::kParallelComponent, "<ParallelComponent>" },
   { Component::kMultiBasisComponent, "<MultiBasisComponent>" },
   { Component::kBLClstmProjected,"<BLClstmProjected>"},
+  { Component::kBLClstmProjected,"<BLClstmProjectedStreams>"}, //bwd compat
 };
 
 

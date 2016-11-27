@@ -153,8 +153,10 @@ class BLClstmProjected : public MultistreamComponent {
         case 'B': ExpectToken(is, binary, "<BiasLearnRateCoef>");
           ReadBasicType(is, binary, &bias_learn_rate_coef_);
           break;
-        case 'D': ExpectToken(is, binary, "<DiffClip>");
-          ReadBasicType(is, binary, &diff_clip_);
+        case 'D': ReadToken(is, false, &token);
+          if (token == "<DiffClip>") ReadBasicType(is, binary, &diff_clip_);
+          else if (token == "<DropoutRate>") ReadBasicType(is, binary, &diff_clip_);
+          else KALDI_ERR << "Unknown token: " << token;
           break;
         case 'G': ExpectToken(is, binary, "<GradClip>");
           ReadBasicType(is, binary, &grad_clip_);

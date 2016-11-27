@@ -228,7 +228,7 @@ class CuVector: public CuVectorBase<Real> {
   
  public:
   CuVector() { }
-  CuVector(MatrixIndexT dim, MatrixResizeType t = kUndefined) { Resize(dim, t); }
+  CuVector(MatrixIndexT dim, MatrixResizeType t = kSetZero) { Resize(dim, t); }
   
   CuVector(const CuVectorBase<Real> &v);
 
@@ -251,7 +251,7 @@ class CuVector: public CuVectorBase<Real> {
   }
 
   /// Allocate the memory
-  void Resize(MatrixIndexT dim, MatrixResizeType t = kUndefined);
+  void Resize(MatrixIndexT dim, MatrixResizeType t = kSetZero);
   
   ~CuVector() { Destroy(); }
 

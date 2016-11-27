@@ -26,7 +26,7 @@ from optparse import OptionParser
 usage="%prog [options] <feat-dim> <num-leaves> >nnet-proto-file"
 parser = OptionParser(usage)
 # Required,
-parser.add_option('--cell-dim', dest='cell_dim', type='int', default=320,
+parser.add_option('--cell-dim', dest='cell_dim', type='int', default=1024,
                    help='Number of cells for one direction in LSTM [default: %default]');
 parser.add_option('--proj-dim', dest='proj_dim', type='int', default=400,
                    help='Number of LSTM recurrent units [default: %default]');
@@ -35,15 +35,15 @@ parser.add_option('--num-layers', dest='num_layers', type='int', default=2,
 # Optional (default == 'None'),
 parser.add_option('--lstm-param-range', dest='lstm_param_range', type='float', default=0.02, 
                    help='Range of initial LSTM parameters [default: %default]');
-parser.add_option('--param-stddev', dest='param_stddev', type='float', defalut=0.01, 
+parser.add_option('--param-stddev', dest='param_stddev', type='float', default=0.01, 
                    help='Standard deviation for initial weights of Softmax layer [default: %default]');
 parser.add_option('--cell-clip', dest='cell_clip', type='float', default=50.0, 
                    help='Clipping cell values during propagation (per-frame) [default: %default]');
-parser.add_option('--diff-clip', dest='diff_clip', type='float', default=5.0, 
+parser.add_option('--diff-clip', dest='diff_clip', type='float', default=15.0, 
                    help='Clipping partial-derivatives during BPTT (per-frame) [default: %default]');
 parser.add_option('--cell-diff-clip', dest='cell_diff_clip', type='float', default=5.0, 
                    help='Clipping partial-derivatives of "cells" during BPTT (per-frame, those accumulated by CEC) [default: %default]');
-parser.add_option('--grad-clip', dest='grad_clip', type='float', default=5.0, 
+parser.add_option('--grad-clip', dest='grad_clip', type='float', default=15.0, 
                    help='Clipping the accumulated gradients (per-updates) [default: %default]');
 #
 

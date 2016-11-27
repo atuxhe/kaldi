@@ -15,8 +15,10 @@ set -e -o pipefail
 # First the options that are passed through to run_ivector_common.sh
 # (some of which are also used in this script directly).
 stage=0
-nj=30
-decode_nj=30
+#nj=30
+nj=8
+#decode_nj=30
+decode_nj=8
 min_seg_len=1.55
 train_set=train_cleaned
 gmm=tri3_cleaned  # the gmm for the target data
@@ -46,7 +48,7 @@ where "nvcc" is installed.
 EOF
 fi
 
-stage=5
+stage=7
 
 local/nnet3/run_ivector_common.sh --stage $stage \
                                   --nj $nj \

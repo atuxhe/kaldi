@@ -156,6 +156,10 @@ int main(int argc, char *argv[]) {
     po.Register("num-streams", &num_streams,
       "Number of streams in the Multi-stream training");
 
+    int32 target_delay = 0;
+    po.Register("target-delay", &target_delay,
+      "output delay of targets in the multi-stream training");
+    
     bool dummy = false;
     po.Register("randomize", &dummy, "Dummy option.");
 
@@ -259,9 +263,35 @@ int main(int argc, char *argv[]) {
             // store,
             //feats_utt[s] = Matrix<BaseFloat>(feats_transf);
             //feats_utt[s] = feats_transf;
-            feats_utt[s] = feats;
-            labels_utt[s] = targets;
-            weights_utt[s] = weights;
+            if (target_delay == 0) {
+              feats_utt[s] = feats;
+              labels_utt[s] = targets;
+              weights_utt[s] = weights;
+            } else if (target_delay > 0) {
+              feats_utt[s].Resize(feats.NumRows()+target_delay, feats.NumCols());
+              for (int i = 0; i < feats.NumRows(); ++i) {
+                feats_utt[s].Row(i).CopyFromVec(feats.Row(i));
+              }
+              for (int i = feats.NumRows(); i < feats.NumRows()+target_delay;++i) {
+                feats_utt[s].Row(i).CopyFromVec(feats.Row(feats.NumRows()-1));
+              }
+
+              labels_utt[s].resize(feats.NumRows()+target_delay);
+              for (int i = 0 ; i < target_delay; ++i) {
+                labels_utt[s][i] = targets[0];
+              }
+              for (int i = target_delay ; i < feats.NumRows()+target_delay; ++i) {
+                labels_utt[s][i]= targets[i-target_delay];
+              }
+              
+              weights_utt[s].Resize(feats.NumRows()+target_delay);
+              for (int i = 0 ; i < target_delay; ++i) {
+                weights_utt[s](i) = 0.0f;
+              }
+              for (int i = target_delay ; i < feats.NumRows()+target_delay; ++i) {
+                weights_utt[s](i) = weights(i-target_delay);
+              }
+            }
             new_utt_flags[s] = 1;
           }
         }
@@ -286,7 +316,7 @@ int main(int argc, char *argv[]) {
         int32 n_streams = num_streams;
 
         // Create the final feature matrix with 'interleaved feature-lines',
-        feat_mat_host.Resize(n_streams * batch_size, nnet.InputDim(), kUndefined);
+        feat_mat_host.Resize(n_streams * batch_size, nnet.InputDim(), kSetZero);
         target_host.resize(n_streams * batch_size);
         weight_host.Resize(n_streams * batch_size, kSetZero);
         frame_num_utt.resize(n_streams, 0);
@@ -397,6 +427,13 @@ int main(int argc, char *argv[]) {
 
       num_done += std::accumulate(new_utt_flags.begin(), new_utt_flags.end(), 0);
       total_frames += std::accumulate(frame_num_utt.begin(), frame_num_utt.end(), 0);
+      
+      NnetTrainOptions tmpTrOpts = trn_opts; //add by hex
+      //by hex exp learn rate annealling
+      if (!crossvalidate){ // exponential scheduling learning rate
+          tmpTrOpts.learn_rate = tmpTrOpts.learn_rate * pow(10.0, -1.6*total_frames*1.0e-10);
+          nnet.SetTrainOptions(tmpTrOpts);
+      }
 
       // report the speed,
       int32 N = 5000;
@@ -405,7 +442,8 @@ int main(int argc, char *argv[]) {
         KALDI_VLOG(1) << "After " << num_done << " utterances, "
           << "(" << total_frames/360000.0 << "h), "
           << "time elapsed = " << time_now / 60 << " min; "
-          << "processed " << total_frames / time_now << " frames per sec.";
+          << " learning rate " << tmpTrOpts.learn_rate;
+//        << "processed " << total_frames / time_now << " frames per sec.";
       }
 
       N=100000;
