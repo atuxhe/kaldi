@@ -99,6 +99,10 @@ class LstmProjected : public MultistreamComponent {
     RandUniform(0.0, 2.0 * param_range, &peephole_o_c_);
     RandUniform(0.0, 2.0 * param_range, &w_r_m_);
 
+    // Add 1.0 to forget-gate bias
+    // [Miao IS16: AN EMPIRICAL EXPLORATION...]
+    bias_.Range(2*cell_dim_, cell_dim_).Add(1.0);
+
     KALDI_ASSERT(cell_dim_ > 0);
     KALDI_ASSERT(learn_rate_coef_ >= 0.0);
     KALDI_ASSERT(bias_learn_rate_coef_ >= 0.0);
