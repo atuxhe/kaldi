@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
     nnet.Read(model_filename);
 
     // disable dropout,
-    nnet_transf.SetDropoutRetention(1.0);
-    nnet.SetDropoutRetention(1.0);
+    nnet_transf.SetDropoutRate(0.0);
+    nnet.SetDropoutRate(0.0);
 
     nnet.SetTestMode();//by Hex;
 
