@@ -90,13 +90,8 @@ int main(int argc, char *argv[]) {
     }
     
     // disable dropout
-<<<<<<< HEAD
     nnet_transf.SetDropoutRate(0.0);
     nnet.SetDropoutRate(0.0);
-=======
-    nnet_transf.SetDropoutRate(1.0);
-    nnet.SetDropoutRate(1.0);
->>>>>>> 2f0a52e27e22b2642178a2d92d316542ad204f99
 
     kaldi::int64 tot_t = 0;
 

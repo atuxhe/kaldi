@@ -49,6 +49,7 @@ __device__ double atomicAdd(double* address, double val) {
 }
 #endif
 #endif
+#endif
 
 template <typename Real>
 __device__ inline void atomic_add(Real* address, Real value) {
